@@ -1,0 +1,13 @@
+# ignore .log files
+*.log
+
+# ignore .aux files
+*.aux
+
+# ignore .pdf files
+*.pdf
+!*problems.pdf
+
+*.fdb_latexmk
+
+*.fls
