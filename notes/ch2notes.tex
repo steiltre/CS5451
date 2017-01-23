@@ -1,0 +1,497 @@
+%        File: ch2notes.tex
+%     Created: Fri Jan 20 04:00 PM 2017 C
+% Last Change: Fri Jan 20 04:00 PM 2017 C
+%
+
+\documentclass[a4paper]{article}
+
+\title{Chapter 2: Parallel Programming Platforms}
+\date{\today}
+\author{Trevor Steil}
+
+\usepackage{amsmath}
+\usepackage{amsthm}
+\usepackage{amssymb}
+\usepackage{esint}
+\usepackage{enumitem}
+\usepackage{algorithm}
+\usepackage{algorithmicx}
+\usepackage{algpseudocode}
+\usepackage{bbm}
+\usepackage{xcolor}
+
+\newtheorem{theorem}{Theorem}[section]
+\newtheorem{corollary}{Corollary}[section]
+\newtheorem{proposition}{Proposition}[section]
+\newtheorem{lemma}{Lemma}[section]
+\newtheorem*{claim}{Claim}
+\newtheorem*{problem}{Problem}
+%\newtheorem*{lemma}{Lemma}
+\newtheorem{definition}{Definition}[section]
+
+\newcommand{\R}{\mathbb{R}}
+\newcommand{\N}{\mathbb{N}}
+\newcommand{\C}{\mathbb{C}}
+\newcommand{\Z}{\mathbb{Z}}
+\newcommand{\Q}{\mathbb{Q}}
+\newcommand{\E}{\mathbb{E}}
+\newcommand{\supp}[1]{\mathop{\mathrm{supp}}\left(#1\right)}
+\newcommand{\lip}[1]{\mathop{\mathrm{Lip}}\left(#1\right)}
+\newcommand{\curl}{\mathrm{curl}}
+\newcommand{\la}{\left \langle}
+\newcommand{\ra}{\right \rangle}
+\renewcommand{\vec}[1]{\mathbf{#1}}
+\renewcommand{\div}{\mathrm{div}}
+
+\newenvironment{solution}[1][]{\emph{Solution #1}}
+
+\algnewcommand{\Or}{\textbf{ or }}
+\algnewcommand{\And}{\textbf{ or }}
+
+\begin{document}
+\maketitle
+
+\section{2.3 Dichotomy of Parallel Computing Platforms}
+
+\begin{itemize}
+  \item SIMD
+    \begin{itemize}
+      \item global control unit splits work among processors
+      \item all processors must perform exact same instructions at exact same time
+        \begin{itemize}
+          \item think of idling in if/else statements
+          \item works well for structured problems
+          \item can use ``activity mask'' to tell whether different processors are supposed to take part in an individual calculation (leads to
+            idling)
+        \end{itemize}
+    \end{itemize}
+  \item MIMD
+    \begin{itemize}
+      \item Each processing element can execute separate programs on different data at the same time
+      \item { \color{red} Is this parallelism used when introducing threads on a multi-core machine, say for matrix-vector multiplication? }
+        \begin{itemize}
+          \item \color{red} If so, do we not have a global processing unit, i.e., a processing unit that splits work up among cores?
+            \begin{itemize}
+              \item Possible answer: On the level of software that is running, a single processor core is distributing tasks. On the level of computer
+                architecture, each core is still functioning independently. A better way of thinking of typical computer as MIMD machine is to think
+                of multitasking on a computer.
+              \item \color{red} Would this mean that SIMD machine may be better (faster, less resource-intensive) for matrix-vector multiplication because
+                  we are simulating in software the architecture of a SIMD machine
+            \end{itemize}
+        \end{itemize}
+      \item Requires more hardware than SIMD machine because each processing unit must also have control unit
+      \item Requires more memory than SIMD because SIMD machine can have a single copy of program in memory
+      \item Supports \textbf{SPMD (Single Program Multiple Data)} model
+        \begin{itemize}
+          \item Multiple instances of the same program running on different data
+        \end{itemize}
+    \end{itemize}
+  \item Shared-Address-Space Platforms
+    \begin{itemize}
+      \item common data space accessible to all processors
+      \item multiprocessors are shared-address-space platforms supporting SPMD programming
+      \item can support local and global memory
+      \item UMA (Uniform Memory Access)
+        \begin{itemize}
+          \item time for processor to access any data in memory is identical
+          \item Excludes cache in consideration (serial machine is not UMA machine otherwise)
+        \end{itemize}
+      \item NUMA (Non-Uniform Memory Access)
+        \begin{itemize}
+          \item Processors can take longer to access certain memory locations
+        \end{itemize}
+      \item Reading global memory occurs as normal
+      \item Writing to global memory can cause issues with concurrent writes
+        \begin{itemize}
+          \item \color{red} How is cache of other processors changed when one processor writes value in global memory
+        \end{itemize}
+      \item Not the same as shared memory (in which all equal access to all memory, i.e. an UMA)
+    \end{itemize}
+  \item Message-Passing Platforms
+    \begin{itemize}
+      \item Used for passing messages between processing nodes with exclusive address space
+      \item Supports \texttt{send}, \texttt{receive}, \texttt{whoami} (returns ID of process), and \texttt{numprocs} (returns number of processes in
+        ensemble)
+      \item Examples
+        \begin{itemize}
+          \item Message Passing Interface (MPI)
+          \item Parallel Virtual Machine (PVM)
+        \end{itemize}
+      \item Can emulate message passing architecture on shared-address-space computer by partitioning memory and ``sending'' and ``receiving'' messages by writing to
+        other nnode's memory and using appropriate synchronization primitives to communication partner when finished
+    \end{itemize}
+\end{itemize}
+
+\section{Physical Organization of Parallel Platforms}
+\begin{itemize}
+  \item Parallel Random Access Machine (PRAM)
+    \begin{itemize}
+      \item Ideal parallel machine consisting of $p$ processors and unbounded global memory with uniform memory access
+      \item Divided into EREW, CREW, ERCW, and CRCW based on whether reads or writes are exclusive or concurrent
+      \item Concurrent writes can cause issues
+        \begin{itemize}
+          \item Protocols for concurrent writes
+        \end{itemize}
+        \begin{itemize}
+          \item Common
+            \begin{itemize}
+              \item Concurrent write is allowed if all are trying to write the same value
+            \end{itemize}
+          \item Arbitrary
+            \begin{itemize}
+              \item Arbitrary processor is allowed to write with rest failing
+            \end{itemize}
+          \item Priority
+            \begin{itemize}
+              \item Processors are given predefined priorities and processor with highest priority succeeds with rest failing
+            \end{itemize}
+          \item Sum
+            \begin{itemize}
+              \item Sum of all values processors are attempting to write is written
+              \item Sum can be replaced by any associative operation
+            \end{itemize}
+        \end{itemize}
+      \item Ideal EREW PRAM would have switches to only allow processor to access memory location of no other processors are already accessing it.
+        This would require $\Theta(mp)$ switches where $m$ is the number of words in global memory and $p$ is the number of processors (impractical)
+    \end{itemize}
+  \item Interconnection Networks for Parallel Computers
+    \begin{itemize}
+      \item Static (aka Direct) Networks
+        \begin{itemize}
+          \item Consist of point-to-point communication links between processing nodes
+        \end{itemize}
+      \item Dynamic (aka Indirect) Networks
+        \begin{itemize}
+          \item Consist of links as well as switches, which dynamically connect processing nodes and memory banks
+        \end{itemize}
+      \item Switches
+        \begin{itemize}
+          \item Consist of input and output ports
+          \item Minimum functionality is mapping of input ports to output ports
+          \item Total number of ports is degree
+          \item May support:
+            \begin{itemize}
+              \item Internal buffering (when output port is busy)
+              \item Routing (to alleviate network congestion)
+              \item Multicast (same output on multiple ports)
+            \end{itemize}
+          \item Cost of switch is determined by cost of mapping hardware, the peripheral hardware, and packaging costs
+            \begin{itemize}
+              \item \color{red} What are these things?
+            \end{itemize}
+        \end{itemize}
+      \item Network Interfaces
+        \begin{itemize}
+          \item Provide connectivity between nodes and network
+          \item Has ports to pipe data into and out of network
+          \item Responsibilities:
+            \begin{itemize}
+              \item Packetizing data
+              \item Computing routing information
+              \item Buffering incoming and outgoing data for matching speeds of network and processing elements
+              \item Error checking
+            \end{itemize}
+          \item Conventionally hang off I/O buses. In highly parallel machines, hang off the memory bus (higher bandwidth).
+            \begin{itemize}
+              \item \color{red} What are the I/O and memory buses?
+            \end{itemize}
+        \end{itemize}
+    \end{itemize}
+  \item Network Topologies
+    \begin{itemize}
+      \item Bus-Based Networks
+        \begin{itemize}
+          \item All nodes connected to shared transmission medium
+          \item Cost of additional node is that of a new bus interface ($O(p)$)
+          \item Low overhead communication cost compared with point-to-point message transfer
+          \item Distance between any two nodes is $O(1)$
+          \item Bottleneck associated with bus bandwidth
+          \item Scalable in cost, not scalable in performance
+        \end{itemize}
+      \item Crossbar Networks
+        \begin{itemize}
+          \item Grid of switches connecting every processor to every memory bank
+          \item Scalable in performance, not scalable in cost
+        \end{itemize}
+      \item Multistage Networks
+        \begin{itemize}
+          \item Lies between bus-based and crossbar to get network scalable in cost and performance
+          \item Omega Network
+            \begin{itemize}
+              \item Contains $\log p$ stages, where $p$ is number of processing nodes and memory banks
+              \item Each stage performs a perfect shuffle
+              \item Each stage uses $p/2$ switches, each of which is in pass-through or cross-over configuration
+              \item Has a total of $\frac{p}{2} \log p = \Theta(p \log p)$ switches (better than $\Theta(p^2)$ of crossbar)
+              \item Distinct accesses from and to distinct locations can block communication for each other
+              \item \color{red} How does this work with differing numbers of processing nodes and memory banks?
+            \end{itemize}
+        \end{itemize}
+      \item Completely-Connected Network
+        \begin{itemize}
+          \item Static counterpart of crossbar switching network
+          \item \color{red} Are these networks connecting processing nodes to each other rather than processing nodes to memory banks like before?
+        \end{itemize}
+      \item Star-Connected Network
+        \begin{itemize}
+          \item Similar to bus-based networks
+          \item Central processor is bottleneck
+        \end{itemize}
+      \item Linear Arrays, Meshes, and $k-d$ Meshes
+        \begin{itemize}
+          \item Necessary communication for parallel computations often shaped like these (think of finite difference grid)
+          \item $k-d$ Mesh
+            \begin{itemize}
+              \item Has $d$ dimensions with $k$ nodes in each
+              \item Linear array is one extreme with $d=1$
+              \item Hypercube is other extreme with $d=\log p$ and $k=2$
+                \begin{enumerate}
+                  \item Constructed recursively by connecting corresponding vertices of lower dimensional hypercubes (0-dimensional hypercube is a
+                    point)
+                  \item See page 41 for numbering scheme and associated minimum distance between nodes
+                \end{enumerate}
+            \end{itemize}
+        \end{itemize}
+      \item Tree-Based Networks
+        \begin{itemize}
+          \item Exactly one path between any two nodes
+          \item Examples: Linear Array, Star-Connected Network, Complete Binary Tree
+          \item In static tree network, all nodes are processing nodes
+          \item In dynamic tree network, intermediate levels are switches with all leaf nodes being processing nodes
+          \item Bottleneck created at higher levels of network { (\color{red} only in complete binary tree?) }
+            \begin{itemize}
+              \item Can be fixed by adding extra connections and switches at higher levels
+              \item Called fat tree
+            \end{itemize}
+        \end{itemize}
+    \end{itemize}
+  \item Evaluating Static Networks
+    \begin{itemize}
+      \item Diameter: maximum distance between any two nodes
+      \item Arc Connectivity: minimum number of arcs that must be removed to break into two disconnected networks
+        \begin{itemize}
+          \item \color{red} Is an arc the same as a link?
+          \item Measures multiplicity of paths between nodes
+        \end{itemize}
+      \item Bisection Width: minimum number of communication links removed to partition the network into two equal halves
+        \begin{itemize}
+          \item \color{red} How is bisection width of a star 1 (as in book)? What is the meaning of equal halves?
+        \end{itemize}
+      \item Channel Width: number of bits that can be communicated simultaneously over a link connecting two nodes (number of physical wires in each
+        communication link)
+      \item Channel Rate: peak rate at which a single physical wire can deliver bits
+      \item Channel Bandwidth: peak rate data can be communicated over communication link (product of channel width and channel rate)
+      \item Bisection Bandwidth (aka Cross-Section Bandwidth): minimum volume of communication allowed between any two halves of the network (product of bisection width and channel
+        bandwidth)
+      \item Cost
+        \begin{itemize}
+          \item Number of communication links
+          \item Alternatively, bisection bandwidth gives lower bound on physical area (or volume) of network
+            \begin{itemize}
+              \item \color{red} How exactly does this work? How much ``space'' does a vertex take up?
+            \end{itemize}
+        \end{itemize}
+    \end{itemize}
+  \item Evaluating Dynamic Interconnection Networks
+    \begin{itemize}
+      \item Similar to metrics used for static networks, but we must also consider switches as nodes (there is an overhead associated to a switch)
+      \item Connectivity can be defined in terms of edges or nodes
+        \begin{itemize}
+          \item Node connectivity is minimum number of (switch) nodes that must fail to fragment the network into two parts
+          \item Arc connectivity same as before
+        \end{itemize}
+      \item Bisection width
+        \begin{itemize}
+          \item Consider partition of $p$ processing nodes into equal parts (without restricting switch node partition)
+          \item Then select an induced partitioning of switches that minimizes the number of edges crossing the partition
+          \item See Figure 2.20
+        \end{itemize}
+      \item Cost is determined by link cost and switch cost (typically more expensive)
+      \item \color{red} Numbers in Table 2.2 for Dynamic Tree seem off. Isn't dynamic tree made of processors just as leaf nodes, so diameter and cost
+        are much higher (double?)? How is arc connectivity not 1?
+    \end{itemize}
+  \item Cache Coherence in Multiprocessor Systems
+    \begin{itemize}
+      \item Want to keep multiple copies of same data consistent with each other in a shared-address-space system (i.e. data in different caches)
+      \item Update Protocol
+        \begin{itemize}
+          \item When data item is written, all copies in system are updated
+          \item If processor reads item but never uses it, data will need to be updated any time value is written elsewhere in program (latency and
+            bandwidth costs)
+          \item Only updates on write to global memory, not write to cache
+        \end{itemize}
+      \item Invalidate Protocol
+        \begin{itemize}
+          \item When data item is written, all other copies are invalidated
+          \item Only needs to invalidate item on first write (subsequent writes won't have any affect, as opposed to update protocol)
+          \item Invalidation happens whenever write is done in cache, not necessarily global memory
+            \begin{itemize}
+              \item \color{red} Will computers write to cache without updating in global memory
+            \end{itemize}
+          \item Most modern computers will us Invalidate Protocol (will be assumed in text)
+        \end{itemize}
+      \item False Sharing
+        \begin{itemize}
+          \item When one item is updated, all other items within cache-line will be updated as well
+            \begin{itemize}
+              \item \color{red} Can one item be updated at one processor, an update sent out, then another item at another processor being updated in
+                the same cache-line be changed before update from other processor arrives, leading to the second item being returned to its original
+                value?
+            \end{itemize}
+          \item With invalidate protocol, can lead to different processors repeatedly fetching data from other processors
+            \begin{itemize}
+              \item \color{red} Can two processors end up simultaneously invalidating each other's data?
+            \end{itemize}
+          \item With update protocol, all reads can be done locally, and only writes require cache-line to be updated
+        \end{itemize}
+      \item Tradeoff between update protocol and invalidate protocol is tradeoff between communications (update) and idling (stalling in invalidates)
+        \begin{itemize}
+          \item { \color{red} What leads to stalling in invalidate? } Needing to fetch after cache-line is invalidated
+        \end{itemize}
+      \item Implementation of Coherence Protocols
+        \begin{itemize}
+          \item Snoopy Cache Systems
+            \begin{itemize}
+              \item Uses bus or ring for broadcast interconnection network
+              \item Each processor monitors the bus for transactions and updates according to state diagram of its coherence protocol
+              \item Bus has finite bandwidth, which presents bottleneck when many coherence operations performed
+              \item All processors must broadcast all memory operations over bus, and all processors must snoop on all messages from all other
+                processors. This is not scalable.
+              \item \color{red} Why does $y=x+y$ use an invalidated copy of $x$ stored at Processor 1 in Figure 2.23?
+            \end{itemize}
+          \item Directory Based Systems
+            \begin{itemize}
+              \item Data in memory augmented with directory maintaining bitmap of cache blocks and processors where data is cached
+              \item Bitmap entries are called presence bits
+              \item Directory is contained in memory and can only be updated at a finite speed causing possible bottlenecks in program with large
+                number of coherence actions (read/write of overlapping data blocks)
+              \item Memory required scales as $\Theta(mp)$ where $m$ is number of memory blocks and $p$ is the number of processors, which can be a
+                bottleneck with many processors
+                \begin{enumerate}
+                  \item Can increase block size to fight this (i.e. reduce $m$), but this will cause larger costs of false sharing
+                \end{enumerate}
+            \end{itemize}
+        \end{itemize}
+    \end{itemize}
+\end{itemize}
+
+\section{Communication Costs in Parallel Machines}
+\begin{itemize}
+  \item Message Passing Costs in Paralllel Computers
+    \begin{itemize}
+      \item Startup time ($t_s$): Time required to prepare message, execute routing algorithm, and establish an interface between node and router
+      \item Per-hop time ($t_h$): Time required for header of message to pass directly between adjacent nodes (aka node latency)
+      \item Per-word transfer time ($t_w$): $t_w = 1/r$ where $r$ is the channel bandwidth (words/second)
+      \item Store-and-Forward Routing
+        \begin{itemize}
+          \item Each intermediate node on path receives and stores entire message before forwarding to next node
+          \item Communication time for message of length $m$ to traverse $l$ links is given by
+            \[ t_{comm} = t_s + (m t_w + t_h)l .\]
+            $t_h$ is typically small, so can be approximated by
+            \[ t_{comm} = t_s + m t_w l .\]
+        \end{itemize}
+      \item Packet Routing
+        \begin{itemize}
+          \item Message is broken into smaller pieces to reduce downtime waiting for entire message before forwarding
+          \item Reduced overhead due to recovering lost packets
+          \item Packets may take different paths (reducing congestion)
+          \item Better error correction capability {\color{red} How?}
+          \item Increased overhead from each packet needing to carry routing, error correction, and sequencing information
+        \end{itemize}
+      \item Cut-Through Routing
+        \begin{itemize}
+          \item Can place additional restrictions to reduce overhead of packet switching
+            \begin{itemize}
+              \item Forcing all packets to take same path eliminates routing info with every packet
+              \item Forcing in-sequence delivery eliminates sequence info in packets
+              \item Associating erro info to message rather than packet reduces overhead of error detection and correction
+              \item Parallel machines tend to have low error rates, so a lean error detection mechanism can usually be used
+            \end{itemize}
+          \item Implementing above features results in cut-through routing
+          \item Message is split into fixed-size units called flits (smaller than packets because of reduced overhead info)
+          \item First, tracer is sent to establish connection
+          \item Then, flits are sent end-to-end along the same route
+          \item Intermediate nodes send flits on immediately after receiving them
+            \begin{itemize}
+              \item Reduces memory usage because whole message doesn't need to be stored as in Store-and-Forward
+            \end{itemize}
+          \item Communication cost given by
+            \[ t_{comm} = t_s + l t_h + t_w m \]
+          \item Flit sizes vary for different networks and applications
+            \begin{itemize}
+              \item For parallel programming paradigm where short messages are frequently passed (cache lines), latency is biggest concern
+              \item When longer variable-length messages are sent, bandwidth is biggest concer
+            \end{itemize}
+          \item Deadlock: when no flits are able to move because buffers and links needed for continuing on route are being used for all flits (no
+            flits can move)
+        \end{itemize}
+      \item Simplified Cost Model for Communicating Messages
+        \begin{itemize}
+          \item For communicating message with cut-through routing, cost is given by
+            \[ t_{comm} = t_s + l t_h + t_w m .\]
+            To minimize this cost:
+            \begin{itemize}
+              \item Communicate in bulk: $t_s$ is often large, so amortize this (fixed) cost by sending larger messages
+              \item Minimize volume of data ($m$)
+              \item Minimize distance of data transfer ($l$)
+                \begin{enumerate}
+                  \item Often impractical because programmer doesn't have control over mapping of tasks to physical processors and networks will often
+                    use randomized (two-step) routing by first sending to a random node then to destination, and $t_h$ and $l$ are often small
+                \end{enumerate}
+              \item Leads to simplified communication cost model
+                \[ t_{comm} = t_s + t_w m \]
+                \begin{enumerate}
+                  \item Communication time is constant between any pair of nodes (implies model is working on a completely-connected network)
+                  \item Can design algorithms with this cost model in mind to give an architecture-independent algorithm and port to any machine
+                  \item Requires uncongested network to be valid
+                \end{enumerate}
+            \end{itemize}
+        \end{itemize}
+      \item Communication Costs in Shared-Address-Space Machines
+        \begin{itemize}
+          \item Harder to determine than for message passing:
+            \begin{itemize}
+              \item Programmer has limited control, and local and remote access times can be vastly different in distributed memory system
+              \item Finite cache size can result in cache thrashing in which values in cache are overwritten and retrieved multiple times in course of
+                computation. This problem can be present in serial programs as well, but each miss is more costly in multiprocessor system because of
+                coherence operations and interprocessor communications involved
+              \item Hard to quantify overhead associated to invalidate and update operations. Overhead depends on how frequently data is invalidated
+                and needs to be fetched, or how many copies of data are being used when an update occurs.
+              \item Hard to model spatial locality. Access times may be very different based on size of cache lines. Programmer has no control other
+                than to permute data structures.
+              \item Prefetching can reduce overhead, but it is dependent on compiler and resource availability
+              \item False sharing can add overhead when data is not being operated on by different processors
+              \item Contention is a major overhead { \color{red} (What is contention?) }
+            \end{itemize}
+          \item Cost model with these considerations becomes too cumbersome to use and too specific to individual machines to be generally applicable
+        \end{itemize}
+    \end{itemize}
+\end{itemize}
+
+\section{Routing Mechanisms for Interconnection Networks}
+\begin{itemize}
+  \item Routing Mechanism
+    \begin{itemize}
+      \item Determines path a message takes through network
+      \item Depends on source and destination, possibly state of network
+      \item Returns one or more paths through network
+      \item Minimal Routing Mechanism: always uses one of the shortest path between two points (each node brings message closer to destination)
+      \item Non-Minimal Routing Mechanism: may use a longer route to avoid congestion
+      \item Deterministic Routing: gives a unique based on just source and destination
+        \begin{itemize}
+          \item Example: dimension-ordered routing - message traverses dimensions (in mesh, hypercube, etc.) one at a time
+        \end{itemize}
+      \item Adaptive Routing: Uses state of network to determine path to take (routes around congestion)
+      \item Book will assume deterministic and minimal message routing
+      \item \color{red} Is there any relation between dynamic and static networks and what type of routing can be done on them?
+    \end{itemize}
+\end{itemize}
+
+\section{Impact of Process-Processor Mapping and Mapping Techniques}
+\begin{itemize}
+  \item Communication among processors can be given same structure as communication between processes in program, leading to no congestion, but if
+    processes aren't mapped to right processors, this advantage may be lost and congestion can occur (programmer often doesn't have control of these
+    mappings)
+\end{itemize}
+\end{document}
+
+
