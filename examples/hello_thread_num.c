@@ -10,8 +10,8 @@ void *PrintHello(void * t)
 
 int main(int argc, char *argv[])
 {
-    //int num_threads = (int)argv[0];
-    int num_threads = 4;
+    int num_threads = atoi(argv[1]);
+    //int num_threads = 4;
     int rc;
     int t;
 
