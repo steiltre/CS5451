@@ -11,3 +11,6 @@
 *.fdb_latexmk
 
 *.fls
+
+# ignore binary files
+*.out
