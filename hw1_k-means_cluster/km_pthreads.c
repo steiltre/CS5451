@@ -4,9 +4,12 @@
 #include <math.h>
 #include <string.h>
 
+#include "timing.h"
+
 void *FindClosestCentroid( void *input_arg );
 void *DetermineCentroids( void *input_arg );
 void WriteOutput( int *closest_centroid, double *centroids, int dim, int num_clusters, int num_points );
+static void print_time( double const seconds );
 pthread_mutex_t closest_centroid_lock;
 pthread_mutex_t determine_centroid_lock;
 pthread_mutex_t cluster_population_lock;
@@ -36,6 +39,7 @@ struct determine_centroid_data
 
 int main(int argc,char *argv[])
 {
+    double start,end;
     int i,j,k;
     int updated;
     updated = 1;
@@ -88,6 +92,8 @@ int main(int argc,char *argv[])
     }
 
     fclose(fp);
+
+    start = monotonic_seconds();
 
     // Initialize centroids and clusters
     for (i=0; i<num_clusters; i++) {
@@ -198,6 +204,10 @@ int main(int argc,char *argv[])
         i++;
 
     }
+
+    end = monotonic_seconds();
+
+    print_time(end-start);
 
     WriteOutput(closest_centroid, centroids, dim, num_clusters, num_points);
 
@@ -371,4 +381,14 @@ void WriteOutput( int *closest_centroid, double *centroids, int dim, int num_clu
     }
 
     fclose(fp);
+}
+
+/**
+ * * @brief Output the seconds elapsed while clustering.
+ * *
+ * * @param seconds Seconds spent on k-means clustering, excluding IO.
+ * */
+static void print_time(double const seconds)
+{
+      printf("k-means clustering time: %0.04fs\n", seconds);
 }
