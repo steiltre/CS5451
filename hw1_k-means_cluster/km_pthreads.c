@@ -285,6 +285,13 @@ void *FindClosestCentroid( void *input_arg )
     pthread_exit(0);
 }
 
+/*
+ * Finds the centroids for each cluster.
+ * Set to find contribution from a subset of points by dividing by the
+ * population for whole clusters, rather than population of cluster contained in
+ * the given subset of points. Centroid location contributions are stored in local
+ * variables and updated to global variables after calculation.
+ */
 void *DetermineCentroids( void *input_arg )
 {
     struct determine_centroid_data *local_data;
@@ -298,7 +305,7 @@ void *DetermineCentroids( void *input_arg )
     double *centroids = local_data->centroids;
     int *closest_centroid = local_data->closest_centroid;
 
-    double local_cluster_sum[num_clusters * dim];
+    double local_cluster_sum[num_clusters * dim]; // Local contribution to centroid coordinates
 
     int i,j;
     int cluster_id;
@@ -321,6 +328,7 @@ void *DetermineCentroids( void *input_arg )
         }
     }
 
+    // Lock global variables and update from local variables
     pthread_mutex_lock(&determine_centroid_lock);
 
     for (i=0; i<num_clusters; i++)
@@ -340,26 +348,27 @@ void *DetermineCentroids( void *input_arg )
 void WriteOutput( int *closest_centroid, double *centroids, int dim, int num_clusters, int num_points )
 {
     int i,j;
-    FILE *fp1, *fp2;
-    fp1 = fopen("clusters.txt", "w");
+    FILE *fp;
+    fp = fopen("clusters.txt", "w");
 
+    // Write cluster of each point to file
     for (i=0; i<num_points; i++)
     {
-        fprintf(fp1, "%d\n", closest_centroid[i]);
+        fprintf(fp, "%d\n", closest_centroid[i]);
     }
 
-    fclose(fp1);
+    fclose(fp);
 
-    fp2 = fopen("centroids.txt", "w");
+    fp = fopen("centroids.txt", "w");
 
     for (i=0; i<num_clusters; i++)
     {
         for (j=0; j<dim; j++)
         {
-            fprintf(fp2, "%.3lf ", centroids[i*dim+j]);
+            fprintf(fp, "%.3lf ", centroids[i*dim+j]);
         }
-        fprintf(fp2, "\n");
+        fprintf(fp, "\n");
     }
 
-    fclose(fp2);
+    fclose(fp);
 }
