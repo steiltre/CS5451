@@ -56,6 +56,14 @@ int main(int argc,char *argv[])
     fscanf(fp, "%d", &dim);
 
     int points_per_thread = num_points / num_threads;
+    int *thread_points;
+    thread_points = (int *) malloc((num_threads + 1) * sizeof(int));
+
+
+    for (i=0; i<num_threads+1; i++)
+    {
+        *(thread_points + i) = (int) (floor( ((double) i) / num_threads * num_points ));
+    }
 
     double *centroids;
     centroids = (double *) malloc(num_clusters * dim * sizeof(double));
@@ -100,12 +108,12 @@ int main(int argc,char *argv[])
 
     for (i=0; i<num_threads; i++)
     {
-        closest_centroid_thread_data[i].num_points = points_per_thread;
+        closest_centroid_thread_data[i].num_points = thread_points[i+1] - thread_points[i];
         closest_centroid_thread_data[i].dim = dim;
         closest_centroid_thread_data[i].num_clusters = num_clusters;
-        closest_centroid_thread_data[i].min_global_point_id = points_per_thread*i;
+        closest_centroid_thread_data[i].min_global_point_id = thread_points[i];
         closest_centroid_thread_data[i].cluster_population = cluster_populations;
-        closest_centroid_thread_data[i].points = &points[ points_per_thread*dim*i ];
+        closest_centroid_thread_data[i].points = &points[ thread_points[i] * dim ];
         closest_centroid_thread_data[i].centroids = centroids;
         closest_centroid_thread_data[i].closest_centroid = closest_centroid;
         closest_centroid_thread_data[i].update_flag = &updated;
@@ -139,13 +147,13 @@ int main(int argc,char *argv[])
 
         for (j=0; j<num_threads; j++)
         {
-            determine_centroid_thread_data[j].num_points = points_per_thread;
+            determine_centroid_thread_data[j].num_points = thread_points[j+1] - thread_points[j];
             determine_centroid_thread_data[j].dim = dim;
             determine_centroid_thread_data[j].num_clusters = num_clusters;
             determine_centroid_thread_data[j].cluster_population = cluster_populations;
-            determine_centroid_thread_data[j].points = &points[ points_per_thread * dim * j];
+            determine_centroid_thread_data[j].points = &points[ thread_points[j] * dim];
             determine_centroid_thread_data[j].centroids = centroids;
-            determine_centroid_thread_data[j].closest_centroid = &closest_centroid[ points_per_thread*j ];
+            determine_centroid_thread_data[j].closest_centroid = &closest_centroid[ thread_points[j] ];
 
             pthread_create(&threads[j], NULL, DetermineCentroids, (void *) (determine_centroid_thread_data+j));
         }
@@ -161,12 +169,12 @@ int main(int argc,char *argv[])
 
         for (j=0; j<num_threads; j++)
         {
-            closest_centroid_thread_data[j].num_points = points_per_thread;
+            closest_centroid_thread_data[j].num_points = thread_points[j+1] - thread_points[j];
             closest_centroid_thread_data[j].dim = dim;
             closest_centroid_thread_data[j].num_clusters = num_clusters;
-            closest_centroid_thread_data[j].min_global_point_id = points_per_thread*j;
+            closest_centroid_thread_data[j].min_global_point_id = thread_points[j];
             closest_centroid_thread_data[j].cluster_population = cluster_populations;
-            closest_centroid_thread_data[j].points = &points[ points_per_thread*dim*j ];
+            closest_centroid_thread_data[j].points = &points[ thread_points[j] * dim ];
             closest_centroid_thread_data[j].centroids = centroids;
             closest_centroid_thread_data[j].closest_centroid = closest_centroid;
             closest_centroid_thread_data[j].update_flag = &updated;
