@@ -16,7 +16,6 @@ struct find_centroid_data
     int num_points;
     int dim;
     int num_clusters;
-    int min_global_point_id;  // minimum point ID in global numbering
     int *cluster_population;
     double *points;
     double *centroids;
@@ -55,8 +54,7 @@ int main(int argc,char *argv[])
     fscanf(fp, "%d", &num_points);
     fscanf(fp, "%d", &dim);
 
-    int points_per_thread = num_points / num_threads;
-    int *thread_points;
+    int *thread_points;  // Array for storing beginning index of points allocated to each thread
     thread_points = (int *) malloc((num_threads + 1) * sizeof(int));
 
 
@@ -65,16 +63,16 @@ int main(int argc,char *argv[])
         *(thread_points + i) = (int) (floor( ((double) i) / num_threads * num_points ));
     }
 
-    double *centroids;
+    double *centroids; // Stores centroid locations
     centroids = (double *) malloc(num_clusters * dim * sizeof(double));
 
-    double *points;
+    double *points; // Stores data point locations
     points = (double *) malloc(num_points * dim * sizeof(double));
 
-    int *closest_centroid;
+    int *closest_centroid; // Stores index of nearest centroid for each point
     closest_centroid = (int *) malloc(num_points * sizeof(int));
 
-    int *cluster_populations;
+    int *cluster_populations; // Stores number of points closest to each centroid
     cluster_populations = (int *) malloc(num_points * dim *sizeof(int));
 
     // Create mutual exclusion lock for updating ID of closest centroid to points and for updating centroids
@@ -103,19 +101,20 @@ int main(int argc,char *argv[])
         closest_centroid[i] = 0;
     }
 
+    // Create array for passing necessary arguments to each thread for finding closest centroid to each point
     struct find_centroid_data *closest_centroid_thread_data;
     closest_centroid_thread_data = (struct find_centroid_data *) malloc(num_threads * sizeof( struct find_centroid_data ));
 
+    // Find initial closest centroid to each data point
     for (i=0; i<num_threads; i++)
     {
         closest_centroid_thread_data[i].num_points = thread_points[i+1] - thread_points[i];
         closest_centroid_thread_data[i].dim = dim;
         closest_centroid_thread_data[i].num_clusters = num_clusters;
-        closest_centroid_thread_data[i].min_global_point_id = thread_points[i];
         closest_centroid_thread_data[i].cluster_population = cluster_populations;
         closest_centroid_thread_data[i].points = &points[ thread_points[i] * dim ];
         closest_centroid_thread_data[i].centroids = centroids;
-        closest_centroid_thread_data[i].closest_centroid = closest_centroid;
+        closest_centroid_thread_data[i].closest_centroid = &closest_centroid[ thread_points[i] ];
         closest_centroid_thread_data[i].update_flag = &updated;
 
         pthread_create(&threads[i], NULL, FindClosestCentroid, (void *) (closest_centroid_thread_data+i));
@@ -126,17 +125,19 @@ int main(int argc,char *argv[])
         pthread_join(threads[i], NULL);
     }
 
+    // Create array for passing necessary arguments to each thread for updating centroid locations
     struct determine_centroid_data *determine_centroid_thread_data;
     determine_centroid_thread_data = (struct determine_centroid_data *) malloc(num_threads * sizeof( struct determine_centroid_data ));
 
     i=0;
-    updated = 1;
+    updated = 1; // For tracking number of data points changing clusters in each iteration
 
     while( updated>0 && i<20 )
     {
 
         updated = 0;
 
+        // Set each centroid location to origin (will update next)
         for (j=0; j<num_threads; j++)
         {
             for (k=0; k<dim; k++)
@@ -145,6 +146,10 @@ int main(int argc,char *argv[])
             }
         }
 
+        /*
+         * Find the centroid of each cluster
+         * Each thread computes contribution to averages from the subset of points allocated to it (approx. n / num_threads)
+         */
         for (j=0; j<num_threads; j++)
         {
             determine_centroid_thread_data[j].num_points = thread_points[j+1] - thread_points[j];
@@ -167,16 +172,19 @@ int main(int argc,char *argv[])
             cluster_populations[j] = 0;
         }
 
+        /*
+         * Determine closest centroid to each data point
+         * Each thread computes closest centroid for each point in subset allocated to it (approx. n / num_threads)
+         */
         for (j=0; j<num_threads; j++)
         {
             closest_centroid_thread_data[j].num_points = thread_points[j+1] - thread_points[j];
             closest_centroid_thread_data[j].dim = dim;
             closest_centroid_thread_data[j].num_clusters = num_clusters;
-            closest_centroid_thread_data[j].min_global_point_id = thread_points[j];
             closest_centroid_thread_data[j].cluster_population = cluster_populations;
             closest_centroid_thread_data[j].points = &points[ thread_points[j] * dim ];
             closest_centroid_thread_data[j].centroids = centroids;
-            closest_centroid_thread_data[j].closest_centroid = closest_centroid;
+            closest_centroid_thread_data[j].closest_centroid = &closest_centroid[ thread_points[j] ];
             closest_centroid_thread_data[j].update_flag = &updated;
 
             pthread_create(&threads[j], NULL, FindClosestCentroid, (void *) (closest_centroid_thread_data+j));
@@ -195,6 +203,12 @@ int main(int argc,char *argv[])
 
 }
 
+/*
+ * Computes closest centroid to each given point.
+ * Distance to every centroid is calculated. Keeps track of closest.
+ * Closest centroid information is kept in local variables and updated
+ * all at once after all calculations.
+ */
 void *FindClosestCentroid( void *input_arg )
 {
     struct find_centroid_data *local_data;
@@ -203,7 +217,6 @@ void *FindClosestCentroid( void *input_arg )
     int num_local_points = local_data->num_points;
     int dim = local_data->dim;
     int num_clusters = local_data->num_clusters;
-    int min_point_id = local_data->min_global_point_id;
     int *global_cluster_population = local_data->cluster_population;
     double *points = local_data->points;
     double *centroids = local_data->centroids;
@@ -246,17 +259,18 @@ void *FindClosestCentroid( void *input_arg )
                 closest_cent = k;
             }
         }
-        local_closest_cent[i] = closest_cent;
-        local_cluster_population[closest_cent] += 1;
+        local_closest_cent[i] = closest_cent; // Update closest centroid to data point
+        local_cluster_population[closest_cent] += 1; // Update number of data points associated to chosen centroid
     }
 
+    // Lock global variables and update from local variables
     pthread_mutex_lock(&closest_centroid_lock);
     for (i=0; i<num_local_points; i++)
     {
-        if (global_closest_cent[min_point_id + i] != local_closest_cent[i])
+        if (global_closest_cent[i] != local_closest_cent[i])
         {
-            *global_update += 1;
-            global_closest_cent[min_point_id + i] = local_closest_cent[i];
+            *global_update += 1; // Update number of data points changing clusters
+            global_closest_cent[i] = local_closest_cent[i];
         }
     }
     pthread_mutex_unlock(&closest_centroid_lock);
