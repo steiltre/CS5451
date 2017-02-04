@@ -17,3 +17,7 @@
 
 # ignore text files
 *.txt
+
+#ignore specific binary files
+*/km_pthreads
+*/km_openmp
