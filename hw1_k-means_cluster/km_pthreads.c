@@ -371,12 +371,14 @@ void WriteOutput( int *closest_centroid, double *centroids, int dim, int num_clu
 
     fp = fopen("centroids.txt", "w");
 
+    // Print centroids without trailing space at end of each line
     for (i=0; i<num_clusters; i++)
     {
-        for (j=0; j<dim; j++)
+        for (j=0; j<dim-1; j++)
         {
             fprintf(fp, "%.3lf ", centroids[i*dim+j]);
         }
+        fprintf(fp, "%.3lf", centroids[i*dim+dim-1]);
         fprintf(fp, "\n");
     }
 
