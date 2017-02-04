@@ -144,7 +144,7 @@ int main(int argc,char *argv[])
         updated = 0;
 
         // Set each centroid location to origin (will update next)
-        for (j=0; j<num_threads; j++)
+        for (j=0; j<num_clusters; j++)
         {
             for (k=0; k<dim; k++)
             {
