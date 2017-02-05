@@ -17,7 +17,7 @@ for c=1:nclusters
   points = X(clusters == c-1, :);
   scatter(points(:,1), points(:,2));
 
-  scatter(centroids(c,1), centroids(c,2), 'k', 'filled');%, 'LineWidth', 5, 'SizeData', 100);
+  scatter(centroids(c,1), centroids(c,2), 'k');%, 'LineWidth', 5, 'SizeData', 100);
 end
 
 uiwait(f);

@@ -14,6 +14,8 @@ pthread_mutex_t closest_centroid_lock;
 pthread_mutex_t determine_centroid_lock;
 pthread_mutex_t cluster_population_lock;
 
+static int max_trials = 20;
+
 struct find_centroid_data
 {
     int num_points;
@@ -37,6 +39,10 @@ struct determine_centroid_data
     int *closest_centroid;
 };
 
+/* Determines centroids of data points using k-means clustering algorithm.
+ * Requires command line arguments for text file containing data points,
+ * number of clusters, and number of threads.
+ */
 int main(int argc,char *argv[])
 {
     double start,end;
@@ -138,17 +144,20 @@ int main(int argc,char *argv[])
     i=0;
     updated = 1; // For tracking number of data points changing clusters in each iteration
 
-    while( updated>0 && i<20 )
+    while( updated>0 && i<max_trials )
     {
 
         updated = 0;
 
-        // Set each centroid location to origin (will update next)
+        // Set each centroid location to origin to be updated (only use nonempty centroids)
         for (j=0; j<num_clusters; j++)
         {
-            for (k=0; k<dim; k++)
+            if (cluster_populations[j] > 0)
             {
-                centroids[j*dim + k] = 0;
+                for (k=0; k<dim; k++)
+                {
+                    centroids[j*dim + k] = 0;
+                }
             }
         }
 
@@ -267,6 +276,7 @@ void *FindClosestCentroid( void *input_arg )
             if (dist < min_dist)
             {
                 closest_cent = k;
+                min_dist = dist;
             }
         }
         local_closest_cent[i] = closest_cent; // Update closest centroid to data point
@@ -371,14 +381,16 @@ void WriteOutput( int *closest_centroid, double *centroids, int dim, int num_clu
 
     fp = fopen("centroids.txt", "w");
 
+    fprintf(fp, "%d %d\n", num_clusters, dim);
+
     // Print centroids without trailing space at end of each line
     for (i=0; i<num_clusters; i++)
     {
-        for (j=0; j<dim-1; j++)
+        for (j=0; j<dim; j++)
         {
             fprintf(fp, "%.3lf ", centroids[i*dim+j]);
         }
-        fprintf(fp, "%.3lf", centroids[i*dim+dim-1]);
+        //fprintf(fp, "%.3lf", centroids[i*dim+dim-1]);
         fprintf(fp, "\n");
     }
 
