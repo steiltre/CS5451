@@ -33,7 +33,7 @@ struct determine_centroid_data
     int num_points;
     int dim;
     int num_clusters;
-    int *cluster_population;
+    double *cluster_weights;
     double *points;
     double *centroids;
     int *closest_centroid;
@@ -84,6 +84,9 @@ int main(int argc,char *argv[])
 
     int *cluster_populations; // Stores number of points closest to each centroid
     cluster_populations = (int *) malloc(num_points * dim *sizeof(int));
+
+    double *cluster_weights; // Stores averaging weights for centroid calculation
+    cluster_weights = (double *) malloc(num_clusters * sizeof(double));
 
     // Create mutual exclusion lock for updating ID of closest centroid to points and for updating centroids
     pthread_mutex_init(&closest_centroid_lock, NULL);
@@ -158,6 +161,11 @@ int main(int argc,char *argv[])
                 {
                     centroids[j*dim + k] = 0;
                 }
+                cluster_weights[j] = ((double) 1) / cluster_populations[j];
+            }
+            else
+            {
+                cluster_weights[j] = 0;
             }
         }
 
@@ -170,7 +178,7 @@ int main(int argc,char *argv[])
             determine_centroid_thread_data[j].num_points = thread_points[j+1] - thread_points[j];
             determine_centroid_thread_data[j].dim = dim;
             determine_centroid_thread_data[j].num_clusters = num_clusters;
-            determine_centroid_thread_data[j].cluster_population = cluster_populations;
+            determine_centroid_thread_data[j].cluster_weights = cluster_weights;
             determine_centroid_thread_data[j].points = &points[ thread_points[j] * dim];
             determine_centroid_thread_data[j].centroids = centroids;
             determine_centroid_thread_data[j].closest_centroid = &closest_centroid[ thread_points[j] ];
@@ -320,7 +328,7 @@ void *DetermineCentroids( void *input_arg )
     int num_local_points = local_data->num_points;
     int dim = local_data->dim;
     int num_clusters = local_data->num_clusters;
-    int *cluster_population = local_data->cluster_population;
+    double *cluster_weights = local_data->cluster_weights;
     double *points = local_data->points;
     double *centroids = local_data->centroids;
     int *closest_centroid = local_data->closest_centroid;
@@ -342,8 +350,8 @@ void *DetermineCentroids( void *input_arg )
 
         for (j=0; j<dim; j++)
         {
-            if (cluster_population[cluster_id] > 0) {
-                local_cluster_sum[cluster_id*dim + j] += points[i*dim + j] / cluster_population[cluster_id];
+            if (cluster_weights[cluster_id] > 0) {
+                local_cluster_sum[cluster_id*dim + j] += points[i*dim + j] * cluster_weights[cluster_id];
             }
         }
     }
