@@ -342,9 +342,7 @@ void *DetermineCentroids( void *input_arg )
 
         for (j=0; j<dim; j++)
         {
-            if (cluster_population[cluster_id] > 0) {
-                local_cluster_sum[cluster_id*dim + j] += points[i*dim + j] / cluster_population[cluster_id];
-            }
+            local_cluster_sum[cluster_id*dim + j] += points[i*dim + j];
         }
     }
 
@@ -355,7 +353,10 @@ void *DetermineCentroids( void *input_arg )
     {
         for (j=0; j<dim; j++)
         {
-            *(centroids + i*dim + j) += local_cluster_sum[i*dim +j];
+            if (cluster_population[i] != 0)
+            {
+                *(centroids + i*dim + j) += local_cluster_sum[i*dim +j] / cluster_population[i];
+            }
         }
     }
 
