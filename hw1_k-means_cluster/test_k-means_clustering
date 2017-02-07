@@ -1,0 +1,23 @@
+#! /bin/bash
+
+# Script to run k-means clustering programs
+
+for clusters in 256 512 1024
+do
+  for threads in 1 2 4 8 16
+  do
+    echo km_pthreads large_cpd.txt $clusters $threads
+    ./km_pthreads /export/scratch/CSCI-5451/assignment-1/large_cpd.txt $clusters $threads
+    echo ""
+  done
+done
+
+for clusters in 256 512 1024
+do
+  for threads in 1 2 4 8 16
+  do
+    echo km_openmp large_cpd.txt $clusters $threads
+    ./km_openmp /export/scratch/CSCI-5451/assignment-1/large_cpd.txt $clusters $threads
+    echo ""
+  done
+done
