@@ -10,7 +10,6 @@ void *FindClosestCentroid( void *input_arg );
 void *DetermineCentroids( void *input_arg );
 void WriteOutput( int *closest_centroid, double *centroids, int dim, int num_clusters, int num_points );
 static void print_time( double const seconds );
-pthread_mutex_t closest_centroid_lock;
 pthread_mutex_t determine_centroid_lock;
 pthread_mutex_t cluster_population_lock;
 
@@ -90,7 +89,6 @@ int main(int argc,char *argv[])
     cluster_weights = (double *) malloc(num_clusters * sizeof(double));
 
     // Create mutual exclusion lock for updating ID of closest centroid to points and for updating centroids
-    pthread_mutex_init(&closest_centroid_lock, NULL);
     pthread_mutex_init(&determine_centroid_lock, NULL);
     pthread_mutex_init(&cluster_population_lock, NULL);
 
@@ -292,8 +290,7 @@ void *FindClosestCentroid( void *input_arg )
         local_cluster_population[closest_cent] += 1; // Update number of data points associated to chosen centroid
     }
 
-    // Lock global variables and update from local variables
-    pthread_mutex_lock(&closest_centroid_lock);
+    // Lock necessary global variables and update from local variables
     for (i=0; i<num_local_points; i++)
     {
         if (global_closest_cent[i] != local_closest_cent[i])
@@ -302,7 +299,6 @@ void *FindClosestCentroid( void *input_arg )
             global_closest_cent[i] = local_closest_cent[i];
         }
     }
-    pthread_mutex_unlock(&closest_centroid_lock);
 
     pthread_mutex_lock(&cluster_population_lock);
     for (i=0; i<num_clusters; i++)
