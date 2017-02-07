@@ -49,6 +49,7 @@ int main(int argc,char *argv[])
     int i,j,k;
     int updated;
     updated = 1;
+    int err;
 
     // Get command line arguments
     char *filename = argv[1];
@@ -61,8 +62,8 @@ int main(int argc,char *argv[])
     int dim;
     FILE *fp;
     fp = fopen(filename, "r");
-    fscanf(fp, "%d", &num_points);
-    fscanf(fp, "%d", &dim);
+    err = fscanf(fp, "%d", &num_points);
+    err = fscanf(fp, "%d", &dim);
 
     int *thread_points;  // Array for storing beginning index of points allocated to each thread
     thread_points = (int *) malloc((num_threads + 1) * sizeof(int));
@@ -70,7 +71,7 @@ int main(int argc,char *argv[])
 
     for (i=0; i<num_threads+1; i++)
     {
-        *(thread_points + i) = (int) (floor( ((double) i) / num_threads * num_points ));
+        *(thread_points + i) = (i * num_points) / num_threads;
     }
 
     double *centroids; // Stores centroid locations
@@ -96,7 +97,7 @@ int main(int argc,char *argv[])
     // Read points from file
     for (i=0; i<num_points; i++) {
         for (j=0; j<dim; j++) {
-            fscanf(fp, "%lf", &points[dim * i + j]);
+            err = fscanf(fp, "%lf", &points[dim * i + j]);
         }
     }
 

@@ -23,6 +23,7 @@ int main(int argc,char *argv[])
     int i,j,k;
     int updated;
     updated = 1;
+    int err;
 
     // Get command line arguments
     char *filename = argv[1];
@@ -35,8 +36,8 @@ int main(int argc,char *argv[])
     int dim;
     FILE *fp;
     fp = fopen(filename, "r");
-    fscanf(fp, "%d", &num_points);
-    fscanf(fp, "%d", &dim);
+    err = fscanf(fp, "%d", &num_points);
+    err = fscanf(fp, "%d", &dim);
 
     double *centroids; // Stores centroid locations
     centroids = (double *) malloc(num_clusters * dim * sizeof(double));
@@ -53,7 +54,7 @@ int main(int argc,char *argv[])
     // Read points from file
     for (i=0; i<num_points; i++) {
         for (j=0; j<dim; j++) {
-            fscanf(fp, "%lf", &points[dim * i + j]);
+            err = fscanf(fp, "%lf", &points[dim * i + j]);
         }
     }
 
@@ -215,10 +216,20 @@ void DetermineCentroids( int num_points, int dim, int num_clusters, int *cluster
 
     int i,j;
     double local_cluster_sum[num_clusters * dim]; // Local contribution to centroid coordinates
+    double cluster_weights[num_clusters]; // Weight to use for averaging in each cluster
 
     for (i=0; i<num_clusters; i++) {
         for (j=0; j<dim; j++) {
             local_cluster_sum[i*dim + j] = 0;
+        }
+
+        if (cluster_population[i] > 0)
+        {
+            cluster_weights[i] = ( (double) 1 ) / cluster_population[i];
+        }
+        else
+        {
+            cluster_weights[i] = 0;
         }
     }
 
@@ -234,9 +245,7 @@ void DetermineCentroids( int num_points, int dim, int num_clusters, int *cluster
             // Add points weighted coordinates to cluster centroid
             for (j=0; j<dim; j++)
             {
-                if (cluster_population[cluster_id] > 0) {
-                    local_cluster_sum[cluster_id*dim+j] += points[i*dim+j] / cluster_population[cluster_id];
-                }
+                local_cluster_sum[cluster_id*dim+j] += points[i*dim+j] * cluster_weights[cluster_id];
             }
         }
 
