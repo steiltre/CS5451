@@ -1,0 +1,151 @@
+%        File: report.tex
+%     Created: Tue Feb 07 05:00 PM 2017 C
+% Last Change: Tue Feb 07 05:00 PM 2017 C
+%
+
+\documentclass[a4paper]{article}
+
+\title{Computer Science 5451 K-Means Clustering Report }
+\date{2/13/17}
+\author{Trevor Steil}
+
+\usepackage{amsmath}
+\usepackage{amsthm}
+\usepackage{amssymb}
+\usepackage{esint}
+\usepackage{enumitem}
+\usepackage{algorithm}
+\usepackage{algorithmicx}
+\usepackage{algpseudocode}
+\usepackage{bbm}
+\usepackage{xcolor}
+
+\newtheorem{theorem}{Theorem}[section]
+\newtheorem{corollary}{Corollary}[section]
+\newtheorem{proposition}{Proposition}[section]
+\newtheorem{lemma}{Lemma}[section]
+\newtheorem*{claim}{Claim}
+\newtheorem*{problem}{Problem}
+%\newtheorem*{lemma}{Lemma}
+\newtheorem{definition}{Definition}[section]
+
+\newcommand{\R}{\mathbb{R}}
+\newcommand{\N}{\mathbb{N}}
+\newcommand{\C}{\mathbb{C}}
+\newcommand{\Z}{\mathbb{Z}}
+\newcommand{\Q}{\mathbb{Q}}
+\newcommand{\E}{\mathbb{E}}
+\newcommand{\supp}[1]{\mathop{\mathrm{supp}}\left(#1\right)}
+\newcommand{\lip}[1]{\mathop{\mathrm{Lip}}\left(#1\right)}
+\newcommand{\curl}{\mathrm{curl}}
+\newcommand{\la}{\left \langle}
+\newcommand{\ra}{\right \rangle}
+\renewcommand{\vec}[1]{\mathbf{#1}}
+\renewcommand{\div}{\mathrm{div}}
+
+\newenvironment{solution}[1][]{\emph{Solution #1}}
+
+\algnewcommand{\Or}{\textbf{ or }}
+\algnewcommand{\And}{\textbf{ or }}
+
+\begin{document}
+\maketitle
+
+\section{Parallelization}
+
+There were two main tasks of the $k$-means clustering algorithm to parallelize: assigning data points to centroids, and calculating centroid positions
+as the average of points in its cluster. In each case, the parallelization was done by dividing the input set of points into subsets for each thread
+to compute with. The other apparent way of solving this problem was to divide work among threads based on clusters and centroids. This method was not
+chosen because of the possible issues with workload balancing. The parallelization method used did have some differences in implementation between
+pthreads and OpenMP.
+
+For the parallelization of assigning points to centroids, each thread was given a subset of data points. Each thread then computed the distance from
+an individual point to each centroid and recorded the closest centroid. It also kept track of the population of each cluster as the computation was
+done for each point. The values were recorded in local variables. After a thread has completed the calculation for all of its assigned points, it
+updates the global values with its local values through the use of a mutex lock or exclusive section. To computer the centroids for a cluster, threads
+were again given a subset of data points. Each thread keeps a local contribution to coordinates of each cluster. When reading through its list of
+points, a thread looks up the cluster a point belongs to and adds its coordintes to the appropriate local centroid coordinates. These centroid
+coordinates were multiplied by the reciprocal of the population of the corresponding cluster (phrased as multiplication to be faster than performing a
+division). This was done to prevent overflow if too many points are in the same cluster have large coordinate values. When a thread has finished
+finding the local contribution to centroid coordinates of its points, it updates the global centroid values using a mutex lock or an exclusive
+section.
+
+The other apparent way to paralelize these operations was to have each thread handle a subset of clusters and look at all points. For instance, to
+calculate the new centroids, each thread could be responsible for finding the coordinates of a subset of the centroids. One issue with this approach
+is that each cluster would then be looping over the entire set of points to find which points it must use for its averaging. This is in contrast to
+threads looping over a subset of points and using the cluster associated to each point to update all centroids in a single loop. Another important
+issue with giving threads a set of clusters to compute centroids for is that of workload balancing. Some clusters may have a relatively large number
+of data points. This could lead to some threads performing significantly more work than others. By giving each thread a subset of the data points to
+use for its calculations, each thread is given the same amount of work to perform.
+
+In some ways, pthreads and OpenMP had to parallelize the problem slightly differently. With pthreads, once the number of threads was given, the data
+points could be split amongst the threads. Within the functions called in \texttt{pthread\_create}, each thread knew the location and number of points
+it was responsible for. So the local variables it kept for tracking the closest centroid could be the size of the set of points it was given, and this
+section was all the thread needed to update within the global variable upon completion of its computation. With OpenMP, there was not the same level
+of control over the points given to individual threads. For this reason, local variables had to be the same size as the global variables, with most
+entries being zeroes. These zeroes were used as part of the updates to global variables, which may be part of the reason the pthreads code tnded to be
+slightly faster than the OpenMP code.
+
+\section{Results}
+
+Here are the timing results of testing with the large\_cpd.txt data file:
+
+\begin{center}
+  \begin{tabular}{| r r r r |}
+    \hline
+    \multicolumn{4}{|c|}{Pthreads Timing Results} \\
+    \hline
+    Clusters & Threads & Time (sec) & Speedup \\
+    \hline
+    256 & 1 & 1705.5255 & 1 \\
+    256 & 2 & 877.5597 & 1.94 \\
+    256 & 4 & 496.4390 & 3.44 \\
+    256 & 8 & 226.2841 & 7.54 \\
+    256 & 16 & 118.7392 & 14.36 \\
+    \hline
+    512 & 1 & 3311.2666 & 1 \\
+    512 & 2 & 1656.6152 & 2.00 \\
+    512 & 4 & 870.2413 & 3.80 \\
+    512 & 8 & 449.9145 & 7.36 \\
+    512 & 16 & 230.4616 & 14.37 \\
+    \hline
+    1024 & 1 & 6620.0796 & 1 \\
+    1024 & 2 & 3313.7906 & 2.00 \\
+    1024 & 4 & 1739.2158 & 3.81 \\
+    1024 & 8 & 898.2294 & 7.37 \\
+    1024 & 16 & 457.3366 & 14.48 \\
+    \hline
+  \end{tabular}
+\end{center}
+
+\begin{center}
+  \begin{tabular}{| r r r r |}
+    \hline
+    \multicolumn{4}{|c|}{OpenMP Timing Results} \\
+    \hline
+    Clusters & Threads & Time (sec) & Speedup\\
+    \hline
+    256 & 1 & 1682.5002 & 1\\
+    256 & 2 & 846.6768 & 1.99 \\
+    256 & 4 & 444.2076 & 3.79 \\
+    256 & 8 & 229.5924 & 7.33 \\
+    256 & 16 & 118.2678 & 14.23 \\
+    \hline
+    512 & 1 & 3334.0104 & 1 \\
+    512 & 2 & 1674.0335 & 1.99 \\
+    512 & 4 & 879.3717 & 3.79 \\
+    512 & 8 & 454.0850 & 7.34 \\
+    512 & 16 & 232.7375 & 14.33 \\
+    \hline
+    1024 & 1 & 6639.9339 & 1 \\
+    1024 & 2 & 3436.3992 & 1.93 \\
+    1024 & 4 & 1832.0310 & 3.62 \\
+    1024 & 8 & 956.5461 & 6.94 \\
+    1024 & 16 & 464.8950 & 14.28 \\
+    \hline
+  \end{tabular}
+\end{center}
+
+\end{document}
+
+
