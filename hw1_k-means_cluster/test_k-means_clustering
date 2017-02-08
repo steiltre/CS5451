@@ -6,8 +6,8 @@ for clusters in 256 512 1024
 do
   for threads in 1 2 4 8 16
   do
-    echo km_pthreads large_cpd.txt $clusters $threads
-    ./km_pthreads /export/scratch/CSCI-5451/assignment-1/large_cpd.txt $clusters $threads
+    echo km_pthreads large_cpd.txt $clusters $threads | tee timing_results.txt
+    ./km_pthreads /export/scratch/CSCI-5451/assignment-1/large_cpd.txt $clusters $threads | tee timing_results.txt
     echo ""
   done
 done
@@ -16,8 +16,8 @@ for clusters in 256 512 1024
 do
   for threads in 1 2 4 8 16
   do
-    echo km_openmp large_cpd.txt $clusters $threads
-    ./km_openmp /export/scratch/CSCI-5451/assignment-1/large_cpd.txt $clusters $threads
+    echo km_openmp large_cpd.txt $clusters $threads | tee timing_results.txt
+    ./km_openmp /export/scratch/CSCI-5451/assignment-1/large_cpd.txt $clusters $threads | tee timing_results.txt
     echo ""
   done
 done
