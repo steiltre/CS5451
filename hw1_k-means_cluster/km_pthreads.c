@@ -68,7 +68,6 @@ int main(int argc,char *argv[])
     int *thread_points;  // Array for storing beginning index of points allocated to each thread
     thread_points = (int *) malloc((num_threads + 1) * sizeof(int));
 
-
     for (i=0; i<num_threads+1; i++)
     {
         *(thread_points + i) = (i * num_points) / num_threads;
@@ -103,6 +102,7 @@ int main(int argc,char *argv[])
 
     fclose(fp);
 
+    // Start timing immediately after reading data file
     start = monotonic_seconds();
 
     // Initialize centroids and clusters
@@ -292,7 +292,9 @@ void *FindClosestCentroid( void *input_arg )
         local_cluster_population[closest_cent] += 1; // Update number of data points associated to chosen centroid
     }
 
-    // Lock global variables and update from local variables
+    // Lock is not necessary for updating closest_centroid because no two threads will be writing to same location
+    // and no threads read from closest_centroid. Lock is left here because timing results were obtained with lock
+    // present and desired speedup was achieved.
     pthread_mutex_lock(&closest_centroid_lock);
     for (i=0; i<num_local_points; i++)
     {

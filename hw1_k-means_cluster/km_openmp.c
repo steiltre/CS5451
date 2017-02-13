@@ -60,6 +60,7 @@ int main(int argc,char *argv[])
 
     fclose(fp);
 
+    // Start timing immediately after reading data file
     start = monotonic_seconds();
 
     // Initialize centroids and clusters
@@ -176,7 +177,9 @@ void FindClosestCentroid( int num_points, int dim, int num_clusters, int *cluste
 
            }
 
-        // Update global variables with local values
+        // Critical section around closest_centroid update is unnecessary because no other threads will be writing to same location
+        // and no threads are reading from closest_centroid. Critical section left in because timing results were obtained with it
+        // and desired speedup was attained. Local array for closest_centroid is unnecessary as a result.
         #pragma omp critical (closest_centroid)
         {
             for(i=0; i<num_points; i++)

@@ -55,36 +55,57 @@
 
 There were two main tasks of the $k$-means clustering algorithm to parallelize: assigning data points to centroids, and calculating centroid positions
 as the average of points in its cluster. In each case, the parallelization was done by dividing the input set of points into subsets for each thread
-to compute with. The other apparent way of solving this problem was to divide work among threads based on clusters and centroids. This method was not
-chosen because of the possible issues with workload balancing. The parallelization method used did have some differences in implementation between
+to compute with. Other apparent ways of solving this problem is to divide work among threads based on clusters and centroids, or dimensions. These
+methods were not chosen because of possible issues with unnecessary repetition in loops, workload balancing, and possible cache performance. The
+disadvantages for both alternate parallelization methods are similar, so we will only consider the details of threads handling subsets of the
+clusters. The parallelization method used had some small differences in implementation between
 pthreads and OpenMP.
 
-For the parallelization of assigning points to centroids, each thread was given a subset of data points. Each thread then computed the distance from
-an individual point to each centroid and recorded the closest centroid. It also kept track of the population of each cluster as the computation was
-done for each point. The values were recorded in local variables. After a thread has completed the calculation for all of its assigned points, it
-updates the global values with its local values through the use of a mutex lock or exclusive section. To computer the centroids for a cluster, threads
-were again given a subset of data points. Each thread keeps a local contribution to coordinates of each cluster. When reading through its list of
+For the parallelization of assigning points to centroids, each thread is given a subset of data points. Each thread then computes the distance from
+an individual point to each centroid and records the closest centroid. Each thread also keeps track of the local population of each cluster using the
+points it is assigned. All values are recorded in local variables. After a thread completes the calculation for all of its assigned points, it
+updates the global array with its closest centroid for all of the points it was assigned. A mutex lock or exclusive section is put around this
+updating step. This lock is not necessary because threads are
+not trying to use this data or write to the same locations in the array. It is left in the code because it was present when timing was done and has
+almost no effect on timing results ($<1\%$).
+
+To compute the centroids for each cluster, threads
+are again given a subset of data points. Each thread keeps a local contribution to coordinates of each centroid. When reading through its list of
 points, a thread looks up the cluster a point belongs to and adds its coordintes to the appropriate local centroid coordinates. These centroid
-coordinates were multiplied by the reciprocal of the population of the corresponding cluster (phrased as multiplication to be faster than performing a
+coordinates are multiplied by the reciprocal of the population of the corresponding cluster (phrased as multiplication to be faster than performing a
 division). This was done to prevent overflow if too many points are in the same cluster have large coordinate values. When a thread has finished
 finding the local contribution to centroid coordinates of its points, it updates the global centroid values using a mutex lock or an exclusive
 section.
 
-The other apparent way to paralelize these operations was to have each thread handle a subset of clusters and look at all points. For instance, to
+Another apparent way to paralelize these operations was to have each thread handle a subset of clusters and look at all points. For instance, to
 calculate the new centroids, each thread could be responsible for finding the coordinates of a subset of the centroids. One issue with this approach
-is that each cluster would then be looping over the entire set of points to find which points it must use for its averaging. This is in contrast to
-threads looping over a subset of points and using the cluster associated to each point to update all centroids in a single loop. Another important
-issue with giving threads a set of clusters to compute centroids for is that of workload balancing. Some clusters may have a relatively large number
+is that each cluster would then be looping over the entire set of points while only using certain points for its averaging. This is in contrast to
+threads looping over a subset of points and using the cluster associated to each point to update all centroids in a single loop over the points.
+
+Another important issue with giving threads a set of clusters to compute centroids for is that of workload balancing. When computing centroid
+coordinates, ome clusters may have a relatively large number
 of data points. This could lead to some threads performing significantly more work than others. By giving each thread a subset of the data points to
 use for its calculations, each thread is given the same amount of work to perform.
 
+A third reason for giving threads sets of points instead of sets of centroids is the possible advantages in cache performance on some problems.
+Consider the case of computing the closest centroid to each point. When looping over each point and considering its distance to all centroids, we may
+be able to keep the locations of centroids in cache if there are few enough centroids. This would mean that at each iteration, only the location of
+the next point needs to be retrieved from RAM. If we instead looped over each centroid and considered the distance to each data point, we would need
+to be able to keep all data points in cache in order to avoid retrieving extra data from RAM. This advantage would only be present on problems for
+which the centroids could be kept in cache and the entire dataset could not. Given that the number of clusters is generally small
+compared to the number of data points (and is never greater than the number of data points), it is more likely that the locations of all centroids can
+be kept in cache than the entire dataset.
+
 In some ways, pthreads and OpenMP had to parallelize the problem slightly differently. With pthreads, once the number of threads was given, the data
-points could be split amongst the threads. Within the functions called in \texttt{pthread\_create}, each thread knew the location and number of points
+points could be split amongst the threads. Within the functions called in \texttt{pthread\_create}, each thread knew the location (within the array of
+points) and number of points
 it was responsible for. So the local variables it kept for tracking the closest centroid could be the size of the set of points it was given, and this
 section was all the thread needed to update within the global variable upon completion of its computation. With OpenMP, there was not the same level
 of control over the points given to individual threads. For this reason, local variables had to be the same size as the global variables, with most
 entries being zeroes. These zeroes were used as part of the updates to global variables, which may be part of the reason the pthreads code tnded to be
 slightly faster than the OpenMP code.
+
+\pagebreak
 
 \section{Results}
 
@@ -149,3 +170,4 @@ Here are the timing results of testing with the large\_cpd.txt data file:
 \end{document}
 
 
+\end{document}
