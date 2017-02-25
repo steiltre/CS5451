@@ -110,10 +110,6 @@ void SortOnRadix(
         {
             if ( ((arr[j] >> i * BIT_CHUNK_SIZE) & mask) == k)
             {
-                if (bin_start[thread_id*local_num_bins + k] > num)
-                {
-                    printf("%d\n", bin_start[thread_id*local_num_bins + k]);
-                }
                 output[bin_start[thread_id*local_num_bins + k]] = arr[j];
                 ++bin_start[thread_id*local_num_bins+k];  // Increment index for next number in bin
             }
@@ -125,6 +121,8 @@ void SortOnRadix(
     {
         arr[j] = output[j];
     }
+
+    free(output);
 }
 
 /**
