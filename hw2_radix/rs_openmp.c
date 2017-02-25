@@ -8,7 +8,7 @@
 /**
  * @brief Number of bits to sort with at one time
  */
-static int const BIT_CHUNK_SIZE = 3;
+static int const BIT_CHUNK_SIZE = 1;
 
 /**
  * @brief Width of integers being sorted
@@ -81,37 +81,36 @@ static inline int GetMask(
  * @param arr Array to be sorted
  * @param i Bit to sort by
  * @param num Number of numbers in arr
- * @param num_bins Number of bins to place numbers in
+ * @param local_num_bins Number of bins to place numbers in
  * @param bin_start Array giving starting location in arr for each bin
  * @param mask Mask to use for bitwise & operation
+ * @param nthreads Number of threads
  */
 void SortOnRadix(
         uint32_t *arr,
         int i,
         int num,
-        int num_bins,
+        int local_num_bins,
         int *bin_start,
-        int mask)
+        int mask,
+        int nthreads)
 {
-    int curr_ind[num_bins];
     uint32_t output[num];
     int j;
 
-    // Initialize curr_ind to starting location of bins
-    for (j=0; j<num_bins; j++)
-    {
-        curr_ind[j] = bin_start[j];
-    }
-
-    // Scan array putting values in order for output
+    // Scan array putting values in order within local array for output
+    #pragma omp parallel for schedule(static)
     for (j=0; j<num; j++)
     {
-        for (int k=0; k<num_bins; k++)
+        int curr_ind[local_num_bins];
+        int thread_id = omp_get_thread_num();
+
+        for (int k=0; k<local_num_bins; k++)
         {
             if ( ((arr[j] >> i * BIT_CHUNK_SIZE) & mask) == k)
             {
-                output[curr_ind[k]] = arr[j];
-                curr_ind[k] += 1;
+                output[bin_start[thread_id*local_num_bins + k]] = arr[j];
+                ++bin_start[thread_id*local_num_bins+k];  // Increment index for next number in bin
             }
         }
     }
@@ -129,26 +128,32 @@ void SortOnRadix(
  * @param arr Array being sorted
  * @param i Current bit being sorted
  * @param num Number of numbers in arr
- * @param num_bins Number of bins to place numbers into
+ * @param local_num_bins Number of bins to place numbers into on each thread
  * @param mask Mask for bitwise & operation
+ * @param nthreads Number of threads
  * @param[out] bin_sizes Array with size of each bin
  */
 void DetermineBinSizes(
         uint32_t *arr,
         int i,
         int num,
-        int num_bins,
+        int local_num_bins,
         int mask,
+        int nthreads,
         int *bin_sizes)
 {
     // Scan array once to find where 0's end and 1's begin
+    #pragma omp parallel for schedule(static)
     for (int j=0; j<num; j++)
     {
-        for (int k=0; k<num_bins; k++)
+        int thread_id = omp_get_thread_num();
+        for (int k=0; k<local_num_bins; k++)
         {
             if ( ((arr[j] >> i * BIT_CHUNK_SIZE) & mask) == k)
             {
-                bin_sizes[k] += 1;
+                ++bin_sizes[thread_id*local_num_bins + k];
+                #pragma omp atomic
+                ++bin_sizes[nthreads*local_num_bins + k];
             }
         }
     }
@@ -159,18 +164,29 @@ void DetermineBinSizes(
  *
  * @param bin_sizes Array containing size of each bin
  * @param num_bins Number of bins in arrays
+ * @param nthreads Number of threads
  * @param[out] bin_start Array of starting indices for bins
  */
 void BinStartIndices(
         int *bin_sizes,
-        int num_bins,
+        int local_num_bins,
+        int nthreads,
         int *bin_start)
 {
     bin_start[0] = 0;
 
-    for (int i=1; i<num_bins; i++)
+    for (int i=1; i<local_num_bins; i++)
     {
-        bin_start[i] = bin_start[i-1] + bin_sizes[i-1];
+        bin_start[i] = bin_start[i-1] + bin_sizes[nthreads*local_num_bins + i-1];
+    }
+
+    #pragma omp parallel for schedule(static)
+    for (int j=0; j<local_num_bins; j++)
+    {
+        for (int k=1; k<nthreads; k++)
+        {
+            bin_start[k*local_num_bins + j] = bin_start[(k-1)*local_num_bins + j] + bin_sizes[(k-1)*local_num_bins + j];
+        }
     }
 }
 
@@ -179,14 +195,18 @@ void BinStartIndices(
  *
  * @param arr Array to sort
  * @param num Number of entries in arr
+ * @param nthreads Number of threads
  */
-void RadixSort(uint32_t *arr, int num)
+void RadixSort(
+        uint32_t *arr,
+        int num,
+        int nthreads)
 {
     int num_bits;
     int num_bins;
     int max_bins = pow(2,BIT_CHUNK_SIZE);  // Largest number of bins possible
-    int bin_sizes[max_bins];
-    int bin_start[max_bins];
+    int bin_sizes[max_bins * (nthreads + 1)];
+    int bin_start[max_bins * nthreads];
 
     int max_iter = GetNumChunks( BIT_CHUNK_SIZE, NUM_BITS );
 
@@ -197,14 +217,14 @@ void RadixSort(uint32_t *arr, int num)
         num_bins = pow(2,num_bits);
         int mask = GetMask(num_bits);
 
-        for (int j=0; j<num_bins; j++)
+        for (int j=0; j<num_bins * (nthreads + 1); j++)
         {
             bin_sizes[j] = 0;
         }
 
-        DetermineBinSizes(arr, i, num, num_bins, mask, bin_sizes);
-        BinStartIndices(bin_sizes, num_bins, bin_start);
-        SortOnRadix(arr, i, num, num_bins, bin_start, mask);
+        DetermineBinSizes(arr, i, num, num_bins, mask, nthreads, bin_sizes);
+        BinStartIndices(bin_sizes, num_bins, nthreads, bin_start);
+        SortOnRadix(arr, i, num, num_bins, bin_start, mask, nthreads);
     }
 }
 
@@ -215,7 +235,10 @@ void RadixSort(uint32_t *arr, int num)
  * @param[out] arr Array containing numbers
  * @param[out] num Number of numbers in arr
  */
-void ReadFile(char const *filename, uint32_t **arr, int *num)
+void ReadFile(
+        char const *filename,
+        uint32_t **arr,
+        int *num)
 {
     FILE *fp;
     fp = fopen(filename, "r");
@@ -237,7 +260,7 @@ int main( int argc, char *argv[] )
     int num_threads = atoi(argv[2]);
     char *outfile = argv[3];
 
-    openmp_set_num_threads(num_threads);
+    omp_set_num_threads(num_threads);
 
     int num;   // Number of numbers being sorted
 
@@ -249,7 +272,7 @@ int main( int argc, char *argv[] )
 
     start = monotonic_seconds();
 
-    RadixSort( numbers, num );
+    RadixSort( numbers, num, num_threads );
 
     print_time(monotonic_seconds()-start);
 
