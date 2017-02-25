@@ -21,6 +21,8 @@
 #ignore specific binary files
 */km_pthreads
 */km_openmp
+*/rs_openmp
+*/rs_mpi
 
 #ignore .tar.gz
 *.tar.gz

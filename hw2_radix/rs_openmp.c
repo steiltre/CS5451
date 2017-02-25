@@ -95,20 +95,25 @@ void SortOnRadix(
         int mask,
         int nthreads)
 {
-    uint32_t output[num];
+    uint32_t *output;
     int j;
+
+    output = (uint32_t *) malloc(num * sizeof(uint32_t));
 
     // Scan array putting values in order within local array for output
     #pragma omp parallel for schedule(static)
     for (j=0; j<num; j++)
     {
-        int curr_ind[local_num_bins];
         int thread_id = omp_get_thread_num();
 
         for (int k=0; k<local_num_bins; k++)
         {
             if ( ((arr[j] >> i * BIT_CHUNK_SIZE) & mask) == k)
             {
+                if (bin_start[thread_id*local_num_bins + k] > num)
+                {
+                    printf("%d\n", bin_start[thread_id*local_num_bins + k]);
+                }
                 output[bin_start[thread_id*local_num_bins + k]] = arr[j];
                 ++bin_start[thread_id*local_num_bins+k];  // Increment index for next number in bin
             }
@@ -277,6 +282,8 @@ int main( int argc, char *argv[] )
     print_time(monotonic_seconds()-start);
 
     print_numbers( outfile, numbers, num );
+
+    free(numbers);
 
     return 0;
 }
