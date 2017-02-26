@@ -100,6 +100,12 @@ void SortOnRadix(
 
     output = (uint32_t *) malloc(num * sizeof(uint32_t));
 
+    #pragma omp parallel for schedule(static)
+    for (j=0; j<num; j++)
+    {
+        output[j] = 0;
+    }
+
     // Scan array putting values in order within local array for output
     #pragma omp parallel for schedule(static)
     for (j=0; j<num; j++)
@@ -150,13 +156,12 @@ void DetermineBinSizes(
     for (int j=0; j<num; j++)
     {
         int thread_id = omp_get_thread_num();
+
         for (int k=0; k<local_num_bins; k++)
         {
             if ( ((arr[j] >> i * BIT_CHUNK_SIZE) & mask) == k)
             {
                 ++bin_sizes[thread_id*local_num_bins + k];
-                #pragma omp atomic
-                ++bin_sizes[nthreads*local_num_bins + k];
             }
         }
     }
@@ -178,19 +183,28 @@ void BinStartIndices(
 {
     bin_start[0] = 0;
 
+//    for (int i=1; i<local_num_bins; i++)
+//    {
+//        bin_start[i] = bin_start[i-1] + bin_sizes[nthreads*local_num_bins + i-1];
+//    }
+
     for (int i=1; i<local_num_bins; i++)
     {
-        bin_start[i] = bin_start[i-1] + bin_sizes[nthreads*local_num_bins + i-1];
-    }
-
-    #pragma omp parallel for schedule(static)
-    for (int j=0; j<local_num_bins; j++)
-    {
-        for (int k=1; k<nthreads; k++)
+        bin_start[i] = bin_start[i-1];
+        for (int j=0; j<nthreads; j++)
         {
-            bin_start[k*local_num_bins + j] = bin_start[(k-1)*local_num_bins + j] + bin_sizes[(k-1)*local_num_bins + j];
+            bin_start[i] += bin_sizes[j*local_num_bins + i-1];
         }
     }
+
+//    #pragma omp parallel for schedule(static)
+//    for (int j=0; j<local_num_bins; j++)
+//    {
+//        for (int k=1; k<nthreads; k++)
+//        {
+//            bin_start[k*local_num_bins + j] = bin_start[(k-1)*local_num_bins + j] + bin_sizes[(k-1)*local_num_bins + j];
+//        }
+//    }
 }
 
 /**
@@ -208,10 +222,11 @@ void RadixSort(
     int num_bits;
     int num_bins;
     int max_bins = pow(2,BIT_CHUNK_SIZE);  // Largest number of bins possible
-    int bin_sizes[max_bins * (nthreads + 1)];
+    int bin_sizes[max_bins * nthreads];
     int bin_start[max_bins * nthreads];
 
-    int max_iter = GetNumChunks( BIT_CHUNK_SIZE, NUM_BITS );
+    //int max_iter = GetNumChunks( BIT_CHUNK_SIZE, NUM_BITS );
+    int max_iter = 1;
 
     for (int i=0; i<max_iter; i++)
     {
@@ -220,14 +235,25 @@ void RadixSort(
         num_bins = pow(2,num_bits);
         int mask = GetMask(num_bits);
 
+        #pragma omp parallel for schedule(static)
         for (int j=0; j<num_bins * (nthreads + 1); j++)
         {
             bin_sizes[j] = 0;
         }
 
+        double start;
+
+        start = monotonic_seconds();
         DetermineBinSizes(arr, i, num, num_bins, mask, nthreads, bin_sizes);
+        print_time(monotonic_seconds()-start);
+
+        start = monotonic_seconds();
         BinStartIndices(bin_sizes, num_bins, nthreads, bin_start);
+        print_time(monotonic_seconds()-start);
+
+        start = monotonic_seconds();
         SortOnRadix(arr, i, num, num_bins, bin_start, mask, nthreads);
+        print_time(monotonic_seconds()-start);
     }
 }
 
@@ -248,6 +274,12 @@ void ReadFile(
     fscanf(fp, "%d", num);
 
     (*arr) = (uint32_t *) malloc( *num * sizeof(uint32_t) );
+
+    #pragma omp parallel for schedule(static)
+    for (int i=0; i<*num; i++)
+    {
+        (*arr)[i] = 0;
+    }
 
     // Read numbers from data file
     for (int i=0; i<*num; i++)
