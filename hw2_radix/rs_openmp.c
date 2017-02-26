@@ -11,6 +11,11 @@
 static int const BIT_CHUNK_SIZE = 1;
 
 /**
+ * @brief Size of chunks to be given to cores
+ */
+static int const NUM_CHUNK_SIZE = 100000;
+
+/**
  * @brief Width of integers being sorted
  */
 static int const NUM_BITS = 32;
@@ -123,6 +128,7 @@ void SortOnRadix(
     }
 
     // Copy output to original array
+    #pragma omp parallel for schedule(static)
     for (j=0; j<num; j++)
     {
         arr[j] = output[j];
@@ -252,24 +258,24 @@ void RadixSort(
         int mask = GetMask(num_bits);
 
         #pragma omp parallel for schedule(static)
-        for (int j=0; j<num_bins * (nthreads + 1); j++)
+        for (int j=0; j<num_bins * nthreads; j++)
         {
             bin_sizes[j] = 0;
         }
 
         double start;
 
-        //start = monotonic_seconds();
+        start = monotonic_seconds();
         DetermineBinSizes(arr, i, num, num_bins, mask, nthreads, bin_sizes);
-        //print_time(monotonic_seconds()-start);
+        printf("Bin Sizes: %0.04fs\n", monotonic_seconds()-start);
 
-        //start = monotonic_seconds();
+        start = monotonic_seconds();
         BinStartIndices(bin_sizes, num_bins, nthreads, bin_start);
-        //print_time(monotonic_seconds()-start);
+        printf("Bin Indices: %0.04fs\n", monotonic_seconds()-start);
 
-        //start = monotonic_seconds();
+        start = monotonic_seconds();
         SortOnRadix(arr, i, num, num_bins, bin_start, mask, nthreads);
-        //print_time(monotonic_seconds()-start);
+        printf("Sort: %0.04fs\n\n", monotonic_seconds()-start);
     }
 }
 
