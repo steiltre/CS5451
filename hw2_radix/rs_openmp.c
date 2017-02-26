@@ -157,6 +157,7 @@ void DetermineBinSizes(
         int nthreads,
         int *bin_sizes)
 {
+    int counter = 0;
     // Scan array once to find where 0's end and 1's begin
     #pragma omp parallel for schedule(static)
     for (int j=0; j<num; j++)
@@ -168,6 +169,8 @@ void DetermineBinSizes(
             if ( ((arr[j] >> i * BIT_CHUNK_SIZE) & mask) == k)
             {
                 ++bin_sizes[thread_id*local_num_bins + k];
+                //#pragma omp atomic
+                //++counter;
             }
         }
     }

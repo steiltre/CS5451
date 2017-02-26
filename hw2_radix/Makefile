@@ -1,4 +1,4 @@
-CC = gcc
+CC = icc
 CCFLAGS = -O2 -lm -Wall -march=native
 
 all: rs_openmp
