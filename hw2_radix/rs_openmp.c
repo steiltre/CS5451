@@ -181,19 +181,35 @@ void BinStartIndices(
         int nthreads,
         int *bin_start)
 {
-    bin_start[0] = 0;
+    //bin_start[0] = 0;
 
 //    for (int i=1; i<local_num_bins; i++)
 //    {
 //        bin_start[i] = bin_start[i-1] + bin_sizes[nthreads*local_num_bins + i-1];
 //    }
 
-    for (int i=1; i<local_num_bins; i++)
+    for (int i=0; i<local_num_bins; i++)
     {
-        bin_start[i] = bin_start[i-1];
         for (int j=0; j<nthreads; j++)
         {
-            bin_start[i] += bin_sizes[j*local_num_bins + i-1];
+            bin_start[j*local_num_bins + i] = 0;
+        }
+    }
+
+    for (int i=0; i<local_num_bins; i++)
+    {
+        if (i == 0)
+        {
+            bin_start[i] = 0;
+        }
+        else
+        {
+            bin_start[i] = bin_start[(nthreads-1)*local_num_bins + i-1] + bin_sizes[(nthreads-1)*local_num_bins + i-1];
+        }
+
+        for (int j=1; j<nthreads; j++)
+        {
+            bin_start[j*local_num_bins + i] += bin_start[(j-1)*local_num_bins + i] + bin_sizes[(j-1)*local_num_bins + i];
         }
     }
 
@@ -225,8 +241,8 @@ void RadixSort(
     int bin_sizes[max_bins * nthreads];
     int bin_start[max_bins * nthreads];
 
-    //int max_iter = GetNumChunks( BIT_CHUNK_SIZE, NUM_BITS );
-    int max_iter = 1;
+    int max_iter = GetNumChunks( BIT_CHUNK_SIZE, NUM_BITS );
+    //int max_iter = 1;
 
     for (int i=0; i<max_iter; i++)
     {
@@ -243,17 +259,17 @@ void RadixSort(
 
         double start;
 
-        start = monotonic_seconds();
+        //start = monotonic_seconds();
         DetermineBinSizes(arr, i, num, num_bins, mask, nthreads, bin_sizes);
-        print_time(monotonic_seconds()-start);
+        //print_time(monotonic_seconds()-start);
 
-        start = monotonic_seconds();
+        //start = monotonic_seconds();
         BinStartIndices(bin_sizes, num_bins, nthreads, bin_start);
-        print_time(monotonic_seconds()-start);
+        //print_time(monotonic_seconds()-start);
 
-        start = monotonic_seconds();
+        //start = monotonic_seconds();
         SortOnRadix(arr, i, num, num_bins, bin_start, mask, nthreads);
-        print_time(monotonic_seconds()-start);
+        //print_time(monotonic_seconds()-start);
     }
 }
 

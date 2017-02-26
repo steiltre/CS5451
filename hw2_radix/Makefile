@@ -1,5 +1,5 @@
 CC = gcc
-CCFLAGS = -lm -Wall -O2 -march=native
+CCFLAGS = -lm -Wall -march=native
 
 all: rs_openmp
 
