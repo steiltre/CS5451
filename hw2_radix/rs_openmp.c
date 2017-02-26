@@ -9,7 +9,7 @@
 /**
  * @brief Number of bits to sort with at one time
  */
-static int const BIT_CHUNK_SIZE = 16;
+static int const BIT_CHUNK_SIZE = 4;
 
 /**
  * @brief Width of integers being sorted
