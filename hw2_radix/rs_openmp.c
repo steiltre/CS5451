@@ -17,6 +17,11 @@ static int const BIT_CHUNK_SIZE = 4;
 static int const NUM_BITS = 32;
 
 /**
+ * @brief Length of rows with padding
+ */
+static int const PAD_WIDTH = 64;
+
+/**
  * @brief Dense integer matrix structure
  */
 typedef struct
@@ -306,16 +311,16 @@ void RadixSort(
 
     rs_matrix *bin_sizes, *bin_start;
 
-    // Use num_bins columns if num_bins > 64, otherwise pad with extra columns
-    if (max_bins > 64)
+    // Use num_bins columns if num_bins > PAD_WIDTH, otherwise pad with extra columns
+    if (max_bins > PAD_WIDTH)
     {
         bin_sizes = rs_matrix_alloc(nthreads, max_bins);
         bin_start = rs_matrix_alloc(nthreads, max_bins);
     }
     else
     {
-        bin_sizes = rs_matrix_alloc(nthreads, 64);
-        bin_start = rs_matrix_alloc(nthreads, 64);
+        bin_sizes = rs_matrix_alloc(nthreads, PAD_WIDTH);
+        bin_start = rs_matrix_alloc(nthreads, PAD_WIDTH);
     }
 
     int max_iter = GetNumChunks( BIT_CHUNK_SIZE, NUM_BITS );
