@@ -341,8 +341,6 @@ void RadixSort(
             }
         }
 
-        double start;
-
         DetermineBinSizes(arr, i, num, num_bins, mask, bin_sizes);
         BinStartIndices(bin_sizes, num_bins, bin_start);
         SortOnRadix(arr, i, num, num_bins, bin_start, mask);
@@ -381,6 +379,8 @@ void ReadFile(
     {
         fscanf(fp, "%u", arr[0]+i);       //NEED TO UNDERSTAND WHY arr[0]+i IS NEEDED HERE!!!!!
     }
+
+    fclose(fp);
 
 }
 
