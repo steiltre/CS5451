@@ -30,6 +30,24 @@ typedef struct
 } rs_matrix;
 
 /**
+ * @brief Implementation of modulo that works for negative dividends
+ *
+ * @param n Dividend
+ * @param d Divisor
+ *
+ * @return r Remainder
+ */
+int mod (int n, int d)
+{
+    int r = n % d;
+    if (r < 0)
+    {
+        r += d;
+    }
+    return r;
+}
+
+/**
  * @brief A wrapper around 'posix_memalign()' to get aligned memory.
  *
  * @param byest How many bytes to allocate
@@ -101,6 +119,53 @@ void rs_matrix_free(
 }
 
 /**
+ * @brief Copy dense matrix
+ *
+ * @param matrix The matrix to copy
+ *
+ * @return mat_copy Copy of the original matrix
+ */
+rs_matrix * rs_matrix_copy(
+        rs_matrix * matrix)
+{
+    rs_matrix * mat_copy;
+
+    mat_copy = rs_matrix_alloc(matrix->nrows, matrix->ncols);
+
+    for (int i=0; i<matrix->nrows * matrix->ncols; i++)
+    {
+        mat_copy->vals[i] = matrix->vals[i];
+    }
+
+    return mat_copy;
+}
+
+/**
+ * @brief Transpose a dense matrix
+ *
+ * @param matrix The matrix to transpose
+ */
+void rs_matrix_transpose(
+        rs_matrix * matrix)
+{
+    rs_matrix * temp_mat;
+    temp_mat = rs_matrix_copy(matrix);
+
+    for (int i=0; i<temp_mat->ncols; i++)
+    {
+        for (int j=0; j<temp_mat->nrows; j++)
+        {
+            matrix->vals[i*temp_mat->nrows + j] = temp_mat->vals[j*temp_mat->ncols + i];
+        }
+    }
+
+    matrix->nrows = temp_mat->ncols;
+    matrix->ncols = temp_mat->nrows;
+
+    rs_matrix_free(temp_mat);
+}
+
+/**
  * @brief Compute the number of chunks to span a set of items
  *
  * @param chunk_size The size of chunks
@@ -159,41 +224,6 @@ static inline int GetMask(
 
     return mask;
 }
-
-/**
- * @brief Print array to log file for debugging
- *
- * @param arr Array to print
- * @param num Number of entries to print
- */
-//void LogArray(
-//        uint32_t *arr,
-//        int num)
-//{
-//    int pid;
-//    MPI_Comm_rank(MPI_COMM_WORLD, &pid);
-//
-//    char pid_str[2];
-//    snprintf(pid_str, 12, "%d", pid);
-//
-//    char log_name[20] = "process";
-//    char ext_str[4] = ".txt";
-//
-//    FILE *fp;
-//
-//    strcat(log_name, pid_str);
-//    strcat(log_name, ext_str);
-//
-//    fp = fopen(log_name, "w");
-//
-//    for (int i=0; i<num; i++)
-//    {
-//        fprintf(fp, "%u \n", arr[i]);
-//    }
-//
-//    fclose(fp);
-//}
-
 
 /**
  * @brief Determine size of bins to use for radix sort
@@ -260,17 +290,13 @@ void BinEndIndices(
     // Use Allgather to get ending index of each local bin to every other process (for shuffling values)
     MPI_Allgather(temp_bin_end, local_num_bins, MPI_INT, global_bin_end->vals, local_num_bins, MPI_INT, MPI_COMM_WORLD);
 
-    // Prefix sum isn't quite global indices
-    for (int i=1; i<global_bin_end->ncols; i++)
-    {
-        global_bin_end->vals[(global_bin_end->ncols-1)*global_bin_end->nrows + i] += global_bin_end->vals[(global_bin_end->ncols-1)*global_bin_end->nrows + i-1];
-    }
+    rs_matrix_transpose(global_bin_end);  // Makes indexing easier in multiple places
 
-    for (int j=0; j<global_bin_end->nrows-1; j++)
+    for (int j=1; j<global_bin_end->nrows; j++)
     {
-        for (int i=1; i<global_bin_end->ncols; i++)
+        for (int i=0; i<global_bin_end->ncols; i++)
         {
-            global_bin_end->vals[global_bin_end->ncols*j + i] += global_bin_end->vals[(global_bin_end->ncols-1)*global_bin_end->nrows + i-1];
+            global_bin_end->vals[j*global_bin_end->ncols + i] += global_bin_end->vals[j*global_bin_end->ncols - 1];
         }
     }
 
@@ -291,27 +317,109 @@ void BinEndIndices(
  *
  * @return outgoing 1-dimensional matrix of locations to send numbers to
  */
+
+rs_matrix *SendMatrix(
+        rs_matrix *bin_end)
+{
+    int chunk_size;
+    int l_index, u_index, l_process, u_process;
+    int pid, npes;
+
+    rs_matrix * send_mat;
+
+    MPI_Comm_size(MPI_COMM_WORLD, &npes);
+    MPI_Comm_rank(MPI_COMM_WORLD, &pid);
+
+    chunk_size = (int) ceil( ( (double) bin_end->vals[bin_end->ncols*bin_end->nrows-1]) / npes);
+
+    send_mat = rs_matrix_alloc(bin_end->nrows, bin_end->ncols);
+
+    for (int i=0; i<send_mat->nrows*send_mat->ncols; i++)
+    {
+        send_mat->vals[i] = 0;
+    }
+
+    int b = bin_end->vals[ bin_end->ncols * bin_end->nrows - 1 ];  // Use this to give "wrap-around" so first row isn't treated separately
+
+    for (int i=0; i<send_mat->nrows; i++)
+    {
+        if (bin_end->vals[ i*bin_end->ncols + pid-1 ] == bin_end->vals[ i*bin_end->ncols + pid ])
+        {
+            continue;
+        }
+
+        l_index = mod( bin_end->vals[ mod( i*bin_end->ncols + pid-1, bin_end->ncols*bin_end->nrows ) ], b);
+        u_index = bin_end->vals[ i*bin_end->ncols + pid ] - 1;
+
+        if (l_index <= u_index)  // Bin is not empty
+        {
+            l_process = l_index / chunk_size;
+            u_process = u_index / chunk_size;
+
+            send_mat->vals[i*send_mat->ncols + l_process] += (l_process+1) * chunk_size - l_index;
+            send_mat->vals[i*send_mat->ncols + u_process] += u_index - (l_process+1)*chunk_size + 1;
+        }
+    }
+
+    return send_mat;
+}
+
 rs_matrix *SendList(
         rs_matrix *bin_end)
 {
-    int i;
-    int send_to[pow(2, BIT_CHUNK_SIZE + 1)];  // Array with size of maximum number of locations to send bits
-    int indices[pow(2, BIT_CHUNK_SIZE + 1)];  // Array to store beginning and ending indices for local bins
+    int i=0;
+    int chunk_size;
+    int send_to[(int) pow(2, BIT_CHUNK_SIZE + 1)];  // Array with size of maximum number of locations to send numbers
+    //int indices[pow(2, BIT_CHUNK_SIZE + 1)];  // Array to store beginning and ending indices for local bins
+    int index1, index2;
+    int process;
 
-    int pid;
-    Get_Comm_rank(MPI_COMM_WORLD, pid);
+    rs_matrix * send_mat;
 
-    int b = bin_end[ bin_end->ncols * bin_end->nrows - 1 ];  // Use this to give "wrap-around" so first row isn't treated separately
+    int pid, npes;
+    MPI_Comm_rank(MPI_COMM_WORLD, &pid);
+    MPI_Comm_size(MPI_COMM_WORLD, &npes);
 
-    if (pid == 0)
+    send_mat = rs_matrix_alloc(bin_end->nrows, npes);
+    for (int j=0; j<send_mat->nrows*send_mat->ncols; j++)
     {
-        indices[i] = 0;
-        indices[i] = bin_end->vals[ bin_end->ncols + 1 ] - 1;
-        i++;
+        send_mat->vals[j] = 0;
+    }
 
-        for (int j=1; j<bin_end->ncols; j++)
+    int b = bin_end->vals[ bin_end->ncols * bin_end->nrows - 1 ];  // Use this to give "wrap-around" so first row isn't treated separately
+
+    chunk_size = (int) ceil( ( (double) bin_end->vals[bin_end->ncols*bin_end->nrows-1]) / npes);
+
+    for (int j=0; j<bin_end->nrows; j++)
+    {
+        index1 = mod( bin_end->vals[ mod(j*bin_end->ncols + pid-1, bin_end->nrows * bin_end->ncols) ], b);
+        index2 = bin_end->vals[ j*bin_end->ncols + pid ] - 1;
+        if (index1 <= index2)
         {
+            process = index1 / chunk_size;
+            send_mat->vals[j*send_mat->ncols + process] = 1;
+            /*
+            if (i == 0 || send_to[i-1] != process)
+            {
+                send_to[i] = process;
+                i++;
+            }
+            */
+
+            process = index2 / chunk_size;
+            send_mat->vals[j*send_mat->ncols + process] = 1;
+
+            /*
+            if ( send_to[i-1] != process )
+            {
+                send_to[i] = process;
+                i++;
+            }
+            */
         }
+    }
+
+    return send_mat;
 }
 
 /**
@@ -321,9 +429,211 @@ rs_matrix *SendList(
  *
  * @return incoming 1-dimensional matrix of locations to receive numbers from
  */
+rs_matrix *RecvMatrix(
+        rs_matrix *bin_end)
+{
+    int sum;
+    int pos_sum = 0;  // Used to track change in sum when sum becomes positive
+    int ideal_chunk_size, local_chunk_size;
+    int pid, npes;
+
+    rs_matrix * recv_mat;
+
+    MPI_Comm_size(MPI_COMM_WORLD, &npes);
+    MPI_Comm_rank(MPI_COMM_WORLD, &pid);
+
+    ideal_chunk_size = (int) ceil( ( (double) bin_end->vals[bin_end->ncols*bin_end->nrows-1]) / npes);
+    int b = bin_end->vals[ bin_end->ncols * bin_end->nrows - 1];  // Last entry in matrix gives total number of numbers being sorted
+    local_chunk_size = GetChunkSize( pid, ideal_chunk_size, b);
+
+    recv_mat = rs_matrix_alloc(bin_end->nrows, bin_end->ncols);
+
+    for (int i = 0; i<recv_mat->nrows*recv_mat->ncols; i++)
+    {
+        recv_mat->vals[i] = 0;
+    }
+
+    sum = -1*pid*ideal_chunk_size;
+
+      for (int i=0; i<recv_mat->nrows; i++)
+      {
+          for (int j=0; j<recv_mat->ncols; j++)
+          {
+              sum += bin_end->vals[i *bin_end->ncols +j] - mod( bin_end->vals[ mod( i*bin_end->ncols + j-1, bin_end->ncols*bin_end->nrows ) ], b );
+
+              if (sum > 0)
+              {
+                  if (sum < local_chunk_size)
+                  {
+                      recv_mat->vals[i *recv_mat->ncols + j] = sum - pos_sum;
+                      pos_sum = sum;
+                  }
+                  else
+                  {
+                      recv_mat->vals[i*recv_mat->ncols + j] = local_chunk_size - pos_sum;
+                      pos_sum = sum;
+                      return recv_mat;
+                  }
+              }
+          }
+      }
+
+    return recv_mat;
+}
+
+
 rs_matrix *RecvList(
         rs_matrix *bin_end)
 {
+    int i=0;
+    int chunk_size;
+    int receive_from[(int) pow(2, BIT_CHUNK_SIZE + 1)];  // Array with size of maximum number of locations to receive numbers
+    int index1, index2;
+    int process;
+
+    rs_matrix * recv_mat;
+
+    int pid, npes;
+    MPI_Comm_rank(MPI_COMM_WORLD, &pid);
+    MPI_Comm_size(MPI_COMM_WORLD, &npes);
+
+    recv_mat = rs_matrix_alloc(bin_end->nrows, npes);
+
+    int b = bin_end->vals[ bin_end->ncols * bin_end->nrows - 1];
+
+    chunk_size = (int) ceil( ( (double) bin_end->vals[bin_end->ncols*bin_end->nrows-1]) / npes);
+
+    for (int j=0; j<bin_end->nrows; j++)
+    {
+        for (int k=0; k<bin_end->ncols; k++)
+        {
+            index1 = mod( bin_end->vals[ mod(j*bin_end->ncols + k-1, bin_end->nrows * bin_end->ncols) ], b);
+            index2 = bin_end->vals[ j*bin_end->ncols + k ] - 1;
+
+            if (index1 <= index2)
+            {
+                process = index1 / chunk_size;
+
+                if (process == pid)
+                {
+                    recv_mat->vals[j*recv_mat->ncols + k] = 1;
+                }
+
+                process = index2 / chunk_size;
+
+                if (process == pid)
+                {
+                    recv_mat->vals[j*recv_mat->ncols + k] = 1;
+                }
+            }
+        }
+    }
+
+    return recv_mat;
+
+}
+
+/**
+ * @brief Determine size of array to receive during communication
+ *
+ * @param bin_end Global ending indices of bins on all processes
+ * @param sender Rank in MPI_COMM_WORLD of sending process
+ * @param local_bin_num The local bin data will be sent from
+ *
+ * @return n Number of elements being received in communication
+ */
+int RecvSize(
+        rs_matrix *bin_end,
+        int sender,
+        int local_bin_num)
+{
+    int n;
+    int pid, npes;
+    int chunk_size;
+    int l_index, u_index;
+
+    MPI_Comm_rank(MPI_COMM_WORLD, &pid);
+    MPI_Comm_size(MPI_COMM_WORLD, &npes);
+
+    int b = bin_end->vals[ bin_end->ncols * bin_end->nrows - 1];
+
+    chunk_size = (int) ceil( ( (double) bin_end->vals[bin_end->ncols*bin_end->nrows-1]) / npes);
+
+    //for (int j=0; j<bin_end->nrows; j++)
+    //{
+        l_index = mod( bin_end->vals[ mod(local_bin_num*bin_end->ncols + sender-1, bin_end->nrows * bin_end->ncols) ], b);
+        u_index = bin_end->vals[ local_bin_num*bin_end->ncols + sender ] - 1;
+
+    //    if ( (pid*chunk_size <= l_index && (pid+1)*chunk_size > l_index) || (pid*chunk_size <= u_index && (pid+1)*chunk_size > u_index) ) // Either bin endpoint is in my global bin's indices
+    //    {
+            n = u_index - l_index + 1;
+            if (l_index < pid*chunk_size)
+            {
+                n -= pid*chunk_size - l_index;
+            }
+
+            if (u_index > (pid+1)*chunk_size-1)
+            {
+                n -= u_index - ((pid+1)*chunk_size - 1);
+            }
+        //}
+    //}
+
+    return n;
+}
+
+/**
+ * @brief Determine size and location of array to send during communication
+ *
+ * @param bin_end Global ending indices of bins on all processes
+ * @param local_bin_end Ending indices of bins in local array
+ * @param receiver Rank in MPI_COMM_WORLD of receiving process
+ * @param local_bin_num The local bin data will be sent from
+ * @param(out) ind Index of first element to send in local array
+ * @param(out) n Number of elements to send
+ */
+void SendIndex(
+        rs_matrix *bin_end,
+        rs_matrix *local_bin_end,
+        int receiver,
+        int local_bin_num,
+        int *ind,
+        int *n)
+{
+    int pid, npes;
+    int chunk_size;
+    int l_index, u_index;
+    int bin_size;
+
+    MPI_Comm_rank(MPI_COMM_WORLD, &pid);
+    MPI_Comm_size(MPI_COMM_WORLD, &npes);
+
+    int b = bin_end->vals[ bin_end->ncols * bin_end->nrows - 1];
+
+    chunk_size = (int) ceil( ( (double) bin_end->vals[bin_end->ncols*bin_end->nrows-1]) / npes);
+
+    //for (int j=0; j<bin_end->nrows; j++)
+    //{
+        l_index = mod( bin_end->vals[ mod(local_bin_num*bin_end->ncols + pid-1, bin_end->nrows * bin_end->ncols) ], b);
+        u_index = bin_end->vals[ local_bin_num*bin_end->ncols + pid ] - 1;
+
+        //if ( (receiver*chunk_size <= l_index && (receiver+1)*chunk_size > l_index) || (receiver*chunk_size <= u_index && (receiver+1)*chunk_size > u_index) ) // Either bin endpoint is in my global bin's indices
+        //{
+            *n = u_index - l_index + 1;
+            bin_size = bin_end->vals[ local_bin_num*bin_end->ncols + pid] - mod( bin_end->vals[ mod(local_bin_num*bin_end->ncols + pid-1, bin_end->ncols*bin_end->nrows )], b);
+            *ind = local_bin_end->vals[local_bin_num] - bin_size;
+            if (l_index < receiver*chunk_size)
+            {
+                *n -= receiver*chunk_size - l_index;
+                *ind += receiver*chunk_size - l_index;
+            }
+
+            if (u_index > (receiver+1)*chunk_size-1)
+            {
+                *n -= u_index - ((receiver+1)*chunk_size - 1);
+            }
+        //}
+    //}
 }
 
 /**
@@ -332,12 +642,124 @@ rs_matrix *RecvList(
  * @param arr Values on local process
  * @param num Number of values in arr
  * @param bin_end Global ending indices of local bins on all processes
+ * @param local_bin_end Ending indices of bins in local array
  */
 void ShuffleValues(
         uint32_t *arr,
         int num,
-        rs_matrix *bin_end)
+        rs_matrix *bin_end,
+        rs_matrix *local_bin_end)
 {
+    rs_matrix * send_mat, * recv_mat;
+    int npes, pid;
+    int send_ind=0, recv_ind=0, n;
+    MPI_Status status;
+
+    uint32_t *temp_arr;
+
+    temp_arr = (uint32_t *) malloc(num * sizeof(uint32_t));
+
+    MPI_Comm_size(MPI_COMM_WORLD, &npes);
+    MPI_Comm_rank(MPI_COMM_WORLD, &pid);
+
+    send_mat = SendMatrix(bin_end);
+    recv_mat = RecvMatrix(bin_end);
+
+    /* Go through each communication in order of process IDs to make sort stable and prevent deadlocks.
+     * Blocking receives will ensure data is communicated in correct order (even when sends are buffered). */
+
+    for (int i=0; i<send_mat->nrows; i++)
+    {
+        for (int j=0; j<npes; j++)
+        {
+            if (send_mat->vals[i*send_mat->ncols + j] > 0)  // Send message
+            {
+                if (j != pid)
+                {
+                    MPI_Send(&(arr[send_ind]), send_mat->vals[i*send_mat->ncols+j], MPI_UINT32_T, j, 0, MPI_COMM_WORLD);
+                    send_ind += send_mat->vals[i*send_mat->ncols+j];
+                }
+            }
+
+            if (j == pid)  // Receive messages from current bins
+            {
+                for (int k=0; k<npes; k++)
+                {
+                    if (recv_mat->vals[i*recv_mat->ncols + k] > 0)  // Receive message
+                    {
+                        if (k != pid)
+                        {
+                            MPI_Recv(&(temp_arr[recv_ind]), recv_mat->vals[i*recv_mat->ncols + k], MPI_UINT32_T, k, MPI_ANY_TAG, MPI_COMM_WORLD, &status);
+                        }
+                        else
+                        {
+                            for (int l=0; l<recv_mat->vals[i*recv_mat->ncols+k]; l++)
+                            {
+                                temp_arr[recv_ind+l] = arr[send_ind+l];
+                            }
+                            send_ind += send_mat->vals[i*send_mat->ncols+j];
+                        }
+                        recv_ind += recv_mat->vals[i*recv_mat->ncols + k];
+                    }
+                }
+            }
+        }
+    }
+
+/*
+    for (int i=0; i<bin_end->nrows; i++)
+    {
+        for (int j=0; j<npes; j++)
+        {
+            if (send_mat->vals[i*send_mat->ncols + j] == 1)  // Send message
+            {
+                if (j != pid)
+                {
+                    SendIndex(bin_end, local_bin_end, j, i, &send_ind, &n);
+                    MPI_Send(&(arr[send_ind]), n, MPI_UINT32_T, j, 0, MPI_COMM_WORLD);
+                }
+            }
+
+            if (j == pid)  // Receive messages if it's current process's turn
+            {
+                for (int k=0; k<npes; k++)  // Check if message will be received from each other process
+                {
+                    if (recv_mat->vals[i*recv_mat->ncols + k] == 1) // Receive message
+                    {
+                        n = RecvSize(bin_end, k, i);
+                        if (k != pid)
+                        {
+                            MPI_Recv(&(temp_arr[recv_ind]), n, MPI_UINT32_T, k, MPI_ANY_TAG, MPI_COMM_WORLD, &status);
+                            recv_ind += n;
+                        }
+                        else
+                        {
+                            if (recv_ind < num)  // Avoids case where first bin has all entries and subsequent bins try adding more entries
+                            {
+                                SendIndex(bin_end, local_bin_end, pid, i, &send_ind, &n);
+                                //memcpy(&(temp_arr[recv_ind]), &(arr[send_ind]), n*sizeof(uint32_t));
+                                for (int l=0; l<n; l++)
+                                {
+                                    temp_arr[recv_ind+l] = arr[send_ind+l];
+                                }
+                                recv_ind += n;
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    }
+    */
+
+    for (int i=0; i<num; i++)
+    {
+        arr[i] = temp_arr[i];
+    }
+    //memcpy(arr, temp_arr, num*sizeof(uint32_t));
+    free(temp_arr);
+    rs_matrix_free(send_mat);
+    rs_matrix_free(recv_mat);
 }
 
 /**
@@ -361,6 +783,8 @@ void SortOnRadix(
     uint32_t *output;
     int j;
 
+    rs_matrix *copy_bin_end = rs_matrix_copy(bin_end);
+
     output = (uint32_t *) malloc(num * sizeof(uint32_t));
 
     for (j=0; j<num; j++)
@@ -369,14 +793,14 @@ void SortOnRadix(
     }
 
     // Scan array putting values in order within local array for output
-    for (j=0; j<num; j++)
+    for (j=num-1; j>=0; --j)
     {
         for (int k=0; k<local_num_bins; k++)
         {
             if ( ((arr[j] >> i * BIT_CHUNK_SIZE) & mask) == k)
             {
-                output[bin_end->vals[k]] = arr[j];
-                ++bin_end->vals[k];  // Increment index for next number in bin
+                --copy_bin_end->vals[k];  // Increment index for next number in bin
+                output[copy_bin_end->vals[k]] = arr[j];
                 break;
             }
         }
@@ -389,6 +813,7 @@ void SortOnRadix(
     }
 
     free(output);
+    rs_matrix_free(copy_bin_end);
 }
 
 /**
@@ -412,11 +837,10 @@ void RadixSort(
     rs_matrix *bin_sizes, *global_bin_end, *local_bin_end;
 
     bin_sizes = rs_matrix_alloc(1, max_bins);
-    global_bin_end = rs_matrix_alloc(npes, max_bins);
     local_bin_end = rs_matrix_alloc(1, max_bins);
 
-    //int max_iter = GetNumChunks(BIT_CHUNK_SIZE, NUM_BITS);
-    int max_iter = 1;
+    int max_iter = GetNumChunks(BIT_CHUNK_SIZE, NUM_BITS);
+    //int max_iter = 1;
 
     for (int i=0; i<max_iter; i++)
     {
@@ -424,6 +848,7 @@ void RadixSort(
         num_bits = GetChunkSize(i, BIT_CHUNK_SIZE, NUM_BITS);
         num_bins = pow(2, num_bits);
         int mask = GetMask(num_bits);
+        global_bin_end = rs_matrix_alloc(npes, max_bins);
 
         for (int j=0; j<max_bins; j++)
         {
@@ -433,11 +858,14 @@ void RadixSort(
         DetermineBinSizes(arr, i, num, num_bins, mask, bin_sizes);
         BinEndIndices(bin_sizes, num_bins, global_bin_end, local_bin_end);
         SortOnRadix(arr, i, num, num_bins, local_bin_end, mask);
-        ShuffleValues(arr, num, global_bin_end);
-        // NEED TO FINISH FROM HERE!!!!!!!!!!!!!!!!!!!!
+        ShuffleValues(arr, num, global_bin_end, local_bin_end);
+
+        rs_matrix_free(global_bin_end);
     }
 
-    free(bin_sizes);
+    rs_matrix_free(bin_sizes);
+    //rs_matrix_free(global_bin_end);
+    rs_matrix_free(local_bin_end);
 }
 
 /**
@@ -446,11 +874,13 @@ void RadixSort(
  * @param filename Name of file containing numbers to sort
  * @param arr Array to place numbers into
  * @param num Number of numbers allocated to local process
+ * @param total_num Number of total numbers being sorted
  */
 void ReadFile(
         char const *filename,
         uint32_t **arr,
-        int *num)
+        int *num,
+        int *total_num)
 {
     int pid, npes, chunk_size;
     MPI_Status status;
@@ -463,7 +893,9 @@ void ReadFile(
         int send_num;  // Number of numbers to send to process
         FILE *fp;
         fp = fopen(filename, "r");
-        fscanf(fp, "%d", num);
+        fscanf(fp, "%d", total_num);
+
+        *num = *total_num;
 
         for (int i=1; i<npes; i++)
         {
@@ -508,6 +940,46 @@ void ReadFile(
 
 }
 
+/**
+ * @brief Gather output and print to file
+ *
+ * @param filename Name of output file
+ * @param arr Array of numbers for output
+ * @param num Local number of numbers being sorted
+ * @param total_num Total number of numbers being sorted
+ */
+void Output(
+        char const *filename,
+        uint32_t *arr,
+        int num,
+        int total_num)
+{
+    int pid, npes;
+
+    MPI_Comm_size(MPI_COMM_WORLD, &npes);
+    MPI_Comm_rank(MPI_COMM_WORLD, &pid);
+
+    if (pid == 0)
+    {
+        int chunk_size;
+        int ideal_chunk_size = (int) ceil( ((double) total_num)/npes );
+        MPI_Status status;
+
+        for (int i=1; i<npes; i++)
+        {
+            chunk_size = GetChunkSize(i, ideal_chunk_size, total_num);
+
+            MPI_Recv(&(arr[i*(ideal_chunk_size)]), chunk_size, MPI_UINT32_T, i, MPI_ANY_TAG, MPI_COMM_WORLD, &status);
+        }
+
+        print_numbers(filename, arr, total_num);
+    }
+    else
+    {
+        MPI_Send(arr, num, MPI_UINT32_T, 0, 0, MPI_COMM_WORLD);
+    }
+}
+
 int main(
         int argc,
         char *argv[])
@@ -518,14 +990,29 @@ int main(
     char *infile = argv[1];
     char *outfile = argv[2];
 
-    uint32_t *numbers;  // Array of numbers being sorted
-    int num;  // Number of numbers being sorted
+    double start, end;
 
-    ReadFile(infile, &numbers, &num);
+    uint32_t *numbers;  // Array of numbers being sorted
+    int num;  // Number of numbers being sorted locally
+    int total_num;  // Number of numbers being sorted globally
+    int pid;
+
+    MPI_Comm_rank(MPI_COMM_WORLD, &pid);
+
+    ReadFile(infile, &numbers, &num, &total_num);
+
+    start = MPI_Wtime();
 
     RadixSort(numbers, num);
 
-    //free(numbers);
+    end = MPI_Wtime();
+
+    if (pid == 0)
+        print_time(end-start);
+
+    Output(outfile, numbers, num, total_num);
+
+    free(numbers);
 
     MPI_Finalize();
 
