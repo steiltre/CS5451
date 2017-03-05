@@ -4,8 +4,6 @@
 #include <math.h>
 #include <string.h>
 #include "mpi.h"
-#include "rs_shared.h"
-
 
 
 /**
@@ -163,6 +161,49 @@ void rs_matrix_transpose(
     matrix->ncols = temp_mat->nrows;
 
     rs_matrix_free(temp_mat);
+}
+
+/**
+ * * @brief Write an array of integers to a file.
+ * *
+ * * @param filename The name of the file to write to.
+ * * @param numbers The array of numbers.
+ * * @param nnumbers How many numbers to write.
+ * */
+static void print_numbers(
+            char const * const filename,
+                uint32_t const * const numbers,
+                    uint32_t const nnumbers)
+{
+      FILE * fout;
+
+        /* open file */
+        if((fout = fopen(filename, "w")) == NULL) {
+                fprintf(stderr, "error opening '%s'\n", filename);
+                    abort();
+                      }
+
+          /* write the header */
+          fprintf(fout, "%d\n", nnumbers);
+
+            /* write numbers to fout */
+            for(uint32_t i = 0; i < nnumbers; ++i) {
+                    fprintf(fout, "%d\n", numbers[i]);
+                      }
+
+              fclose(fout);
+}
+
+/**
+ * * @brief Output the seconds elapsed while sorting. This excludes input and
+ * *        output time. This should be wallclock time, not CPU time.
+ * *
+ * * @param seconds Seconds spent sorting.
+ * */
+static void print_time(
+            double const seconds)
+{
+      printf("Sort Time: %0.04fs\n", seconds);
 }
 
 /**
