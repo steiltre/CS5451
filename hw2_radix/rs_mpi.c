@@ -11,7 +11,7 @@
 /**
  * @brief Number of bits to sort with at one time
  */
-static int const BIT_CHUNK_SIZE = 4;
+static int const BIT_CHUNK_SIZE = 6;
 
 /**
  * @brief Width of integers being sorted
@@ -587,7 +587,7 @@ void RadixSort(
         num_bits = GetChunkSize(i, BIT_CHUNK_SIZE, NUM_BITS);
         num_bins = pow(2, num_bits);
         int mask = GetMask(num_bits);
-        global_bin_end = rs_matrix_alloc(npes, max_bins);
+        global_bin_end = rs_matrix_alloc(npes, num_bins);
 
         for (int j=0; j<max_bins; j++)
         {
