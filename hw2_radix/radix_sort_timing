@@ -1,0 +1,25 @@
+#! /bin/bash
+
+# Script to run k-means clustering programs
+
+echo "" > timing_results.txt
+
+for n in 1M 10M 100M
+do
+  for processes in 1 2 4 8 16
+  do
+    echo rs_openmp $n $processes | tee -a timing_results.txt
+    ./rs_openmp /export/scratch/CSCI-5451/assignment-2/$n.txt $processes /dev/null | tee -a timing_results.txt
+    echo "" | tee -a timing_results.txt
+  done
+done
+
+for n in 1M 10M 100M
+do
+  for processes in 1 2 4 8 16
+  do
+    echo rs_mpi $n $processes | tee -a timing_results.txt
+    mpirun -np $processes ./rs_mpi /export/scratch/CSCI-5451/assignment-2/$n.txt /dev/null | tee -a timing_results.txt
+    echo ""
+  done
+done
