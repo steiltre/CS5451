@@ -11,7 +11,7 @@
 #include <string.h>
 #include <assert.h>
 
-#include "pr_graph.h"
+#include "pr_graph_serial.h"
 
 
 

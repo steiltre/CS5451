@@ -1,0 +1,196 @@
+!_TAG_FILE_FORMAT	2	/extended format; --format=1 will not append ;" to lines/
+!_TAG_FILE_SORTED	1	/0=unsorted, 1=sorted, 2=foldcase/
+!_TAG_PROGRAM_AUTHOR	Darren Hiebert	/dhiebert@users.sourceforge.net/
+!_TAG_PROGRAM_NAME	Exuberant Ctags	//
+!_TAG_PROGRAM_URL	http://ctags.sourceforge.net	/official site/
+!_TAG_PROGRAM_VERSION	5.9~svn20110310	//
+2.3 Dichotomy of Parallel Computing Platforms	notes/ch2notes.tex	/^\\maketitle$/;"	s
+BIT_CHUNK_SIZE	hw2_radix/rs_mpi.c	/^static int const BIT_CHUNK_SIZE = 4;$/;"	v	file:
+BIT_CHUNK_SIZE	hw2_radix/rs_openmp.c	/^static int const BIT_CHUNK_SIZE = 4;$/;"	v	file:
+BIT_CHUNK_SIZE	hw2_radix/rs_serial.c	/^static int const BIT_CHUNK_SIZE = 3;$/;"	v	file:
+BinEndIndices	hw2_radix/rs_mpi.c	/^void BinEndIndices($/;"	f
+BinStartIndices	hw2_radix/rs_openmp.c	/^void BinStartIndices($/;"	f
+BinStartIndices	hw2_radix/rs_serial.c	/^void BinStartIndices($/;"	f
+BusyWork	llnl_pthread_tutorial/join.c	/^void *BusyWork(void *t)$/;"	f
+CC	hw2_radix/Makefile	/^CC = gcc$/;"	m
+CC	hw3_pagerank/Makefile	/^CC = mpicc$/;"	m
+CCFLAGS	hw2_radix/Makefile	/^CCFLAGS = -lm -Wall -march=native -O2$/;"	m
+CLUST_CHUNK_SIZE	hw1_k-means_cluster/shaden_km_openmp.c	/^static int const CLUST_CHUNK_SIZE = 256;$/;"	v	file:
+Communication Costs in Parallel Machines	notes/ch2notes.tex	/^\\end{itemize}$/;"	s
+DetermineBinSizes	hw2_radix/rs_mpi.c	/^void DetermineBinSizes($/;"	f
+DetermineBinSizes	hw2_radix/rs_openmp.c	/^void DetermineBinSizes($/;"	f
+DetermineBinSizes	hw2_radix/rs_serial.c	/^void DetermineBinSizes($/;"	f
+DetermineCentroids	hw1_k-means_cluster/km_openmp.c	/^void DetermineCentroids( int num_points, int dim, int num_clusters, int *cluster_population, double *points, double *centroids, int *closest_centroid )$/;"	f
+DetermineCentroids	hw1_k-means_cluster/km_pthreads.c	/^void *DetermineCentroids( void *input_arg )$/;"	f
+FindClosestCentroid	hw1_k-means_cluster/km_openmp.c	/^void FindClosestCentroid( int num_points, int dim, int num_clusters, int *cluster_population, double *points, double *centroids, int *closest_centroid, int *update_flag)$/;"	f
+FindClosestCentroid	hw1_k-means_cluster/km_pthreads.c	/^void *FindClosestCentroid( void *input_arg )$/;"	f
+GetChunkSize	hw2_radix/rs_mpi.c	/^static inline int GetChunkSize($/;"	f	file:
+GetChunkSize	hw2_radix/rs_openmp.c	/^static inline int GetChunkSize($/;"	f	file:
+GetChunkSize	hw2_radix/rs_serial.c	/^static inline int GetChunkSize($/;"	f	file:
+GetMask	hw2_radix/rs_mpi.c	/^static inline int GetMask($/;"	f	file:
+GetMask	hw2_radix/rs_openmp.c	/^static inline int GetMask($/;"	f	file:
+GetMask	hw2_radix/rs_serial.c	/^static inline int GetMask($/;"	f	file:
+GetNumChunks	hw2_radix/rs_mpi.c	/^static inline int GetNumChunks($/;"	f	file:
+GetNumChunks	hw2_radix/rs_openmp.c	/^static inline int GetNumChunks($/;"	f	file:
+GetNumChunks	hw2_radix/rs_serial.c	/^static inline int GetNumChunks($/;"	f	file:
+Impact of Process-Processor Mapping and Mapping Techniques	notes/ch2notes.tex	/^\\end{itemize}$/;"	s
+NDEBUG	hw1_k-means_cluster/shaden_km_openmp.c	25;"	d	file:
+NUM_BITS	hw2_radix/rs_mpi.c	/^static int const NUM_BITS = 32;$/;"	v	file:
+NUM_BITS	hw2_radix/rs_openmp.c	/^static int const NUM_BITS = 32;$/;"	v	file:
+NUM_BITS	hw2_radix/rs_serial.c	/^static int const NUM_BITS = 32;$/;"	v	file:
+NUM_THREADS	llnl_pthread_tutorial/hello.c	3;"	d	file:
+NUM_THREADS	llnl_pthread_tutorial/hello_arg1.c	12;"	d	file:
+NUM_THREADS	llnl_pthread_tutorial/hello_arg2.c	4;"	d	file:
+NUM_THREADS	llnl_pthread_tutorial/hello_arg3.c	13;"	d	file:
+NUM_THREADS	llnl_pthread_tutorial/join.c	15;"	d	file:
+NUM_THREADS	test/hello_omp.c	13;"	d	file:
+NUM_THREADS	test/hello_pthreads.c	6;"	d	file:
+Output	hw2_radix/rs_mpi.c	/^void Output($/;"	f
+PAD_WIDTH	hw2_radix/rs_openmp.c	/^static int const PAD_WIDTH = 64;$/;"	v	file:
+PAGERANK_GRAPH_H	hw3_pagerank/pagerank_serial/pr_graph_serial.h	2;"	d
+PAGERANK_GRAPH_H	hw3_pagerank/pr_graph.h	2;"	d
+POINT_CHUNK_SIZE	hw1_k-means_cluster/shaden_km_openmp.c	/^static int const POINT_CHUNK_SIZE = 2048;$/;"	v	file:
+Parallelization	hw1_k-means_cluster/report/report.tex	/^\\maketitle$/;"	s
+Parallelization	hw2_radix/report/report.tex	/^\\maketitle$/;"	s
+PrintHello	examples/hello_thread_num.c	/^void *PrintHello(void * t)$/;"	f
+PrintHello	llnl_pthread_tutorial/hello.c	/^void *PrintHello(void *threadid)$/;"	f
+PrintHello	llnl_pthread_tutorial/hello_arg1.c	/^void *PrintHello(void *threadid)$/;"	f
+PrintHello	llnl_pthread_tutorial/hello_arg2.c	/^void *PrintHello(void *threadarg)$/;"	f
+PrintHello	llnl_pthread_tutorial/hello_arg3.c	/^void *PrintHello(void *threadid)$/;"	f
+RadixSort	hw2_radix/rs_mpi.c	/^void RadixSort($/;"	f
+RadixSort	hw2_radix/rs_openmp.c	/^void RadixSort($/;"	f
+RadixSort	hw2_radix/rs_serial.c	/^void RadixSort(uint32_t *arr, int num)$/;"	f
+ReadFile	hw2_radix/rs_mpi.c	/^void ReadFile($/;"	f
+ReadFile	hw2_radix/rs_openmp.c	/^void ReadFile($/;"	f
+ReadFile	hw2_radix/rs_serial.c	/^void ReadFile(char const *filename, uint32_t **arr, int *num)$/;"	f
+RecvMatrix	hw2_radix/rs_mpi.c	/^rs_matrix *RecvMatrix($/;"	f
+Results	hw1_k-means_cluster/report/report.tex	/^\\pagebreak$/;"	s
+Results	hw2_radix/report/report.tex	/^\\pagebreak$/;"	s
+Routing Mechanisms for Interconnection Networks	notes/ch2notes.tex	/^\\end{itemize}$/;"	s
+SendMatrix	hw2_radix/rs_mpi.c	/^rs_matrix *SendMatrix($/;"	f
+ShuffleValues	hw2_radix/rs_mpi.c	/^void ShuffleValues($/;"	f
+SortOnRadix	hw2_radix/rs_mpi.c	/^void SortOnRadix($/;"	f
+SortOnRadix	hw2_radix/rs_openmp.c	/^void SortOnRadix($/;"	f
+SortOnRadix	hw2_radix/rs_serial.c	/^void SortOnRadix($/;"	f
+WriteOutput	hw1_k-means_cluster/km_openmp.c	/^void WriteOutput( int *closest_centroid, double *centroids, int dim, int num_clusters, int num_points )$/;"	f
+WriteOutput	hw1_k-means_cluster/km_pthreads.c	/^void WriteOutput( int *closest_centroid, double *centroids, int dim, int num_clusters, int num_points )$/;"	f
+_POSIX_C_SOURCE	hw1_k-means_cluster/shaden_km_openmp.c	15;"	d	file:
+_POSIX_C_SOURCE	hw1_k-means_cluster/timing.h	2;"	d
+_POSIX_C_SOURCE	hw2_radix/rs_openmp.c	133;"	d	file:
+_POSIX_C_SOURCE	hw3_pagerank/pagerank_serial/pr_graph_serial.c	5;"	d	file:
+_POSIX_C_SOURCE	hw3_pagerank/pr_graph.c	5;"	d	file:
+centroids	hw1_k-means_cluster/km_pthreads.c	/^    double *centroids;$/;"	m	struct:determine_centroid_data	file:
+centroids	hw1_k-means_cluster/km_pthreads.c	/^    double *centroids;$/;"	m	struct:find_centroid_data	file:
+closest_centroid	hw1_k-means_cluster/km_pthreads.c	/^    int *closest_centroid;$/;"	m	struct:determine_centroid_data	file:
+closest_centroid	hw1_k-means_cluster/km_pthreads.c	/^    int *closest_centroid;$/;"	m	struct:find_centroid_data	file:
+closest_centroid_lock	hw1_k-means_cluster/km_pthreads.c	/^pthread_mutex_t closest_centroid_lock;$/;"	v
+cluster_population	hw1_k-means_cluster/km_pthreads.c	/^    int *cluster_population;$/;"	m	struct:find_centroid_data	file:
+cluster_population_lock	hw1_k-means_cluster/km_pthreads.c	/^pthread_mutex_t cluster_population_lock;$/;"	v
+cluster_weights	hw1_k-means_cluster/km_pthreads.c	/^    double *cluster_weights;$/;"	m	struct:determine_centroid_data	file:
+compute_assignments	hw1_k-means_cluster/shaden_km_openmp.c	/^int compute_assignments($/;"	f
+determine_centroid_data	hw1_k-means_cluster/km_pthreads.c	/^struct determine_centroid_data$/;"	s	file:
+determine_centroid_lock	hw1_k-means_cluster/km_pthreads.c	/^pthread_mutex_t determine_centroid_lock;$/;"	v
+dim	hw1_k-means_cluster/km_pthreads.c	/^    int dim;$/;"	m	struct:determine_centroid_data	file:
+dim	hw1_k-means_cluster/km_pthreads.c	/^    int dim;$/;"	m	struct:find_centroid_data	file:
+find_centroid_data	hw1_k-means_cluster/km_pthreads.c	/^struct find_centroid_data$/;"	s	file:
+get_chunk_end	hw1_k-means_cluster/shaden_km_openmp.c	/^static inline int get_chunk_end($/;"	f	file:
+get_num_chunks	hw1_k-means_cluster/shaden_km_openmp.c	/^static inline int get_num_chunks($/;"	f	file:
+hello	test/hello_pthreads.c	/^static void * hello($/;"	f	file:
+init_centroids	hw1_k-means_cluster/shaden_km_openmp.c	/^km_matrix * init_centroids($/;"	f
+km_free	hw1_k-means_cluster/shaden_km_openmp.c	/^void km_free($/;"	f
+km_malloc	hw1_k-means_cluster/shaden_km_openmp.c	/^void * km_malloc($/;"	f
+km_matrix	hw1_k-means_cluster/shaden_km_openmp.c	/^} km_matrix;$/;"	t	typeref:struct:__anon1	file:
+km_matrix_alloc	hw1_k-means_cluster/shaden_km_openmp.c	/^km_matrix * km_matrix_alloc($/;"	f
+km_matrix_free	hw1_k-means_cluster/shaden_km_openmp.c	/^void km_matrix_free($/;"	f
+kmeans	hw1_k-means_cluster/shaden_km_openmp.c	/^int * kmeans($/;"	f
+main	examples/hello_thread_num.c	/^int main(int argc, char *argv[])$/;"	f
+main	hw1_k-means_cluster/check_sum_of_squares.c	/^int main(int argc, char *argv[])$/;"	f
+main	hw1_k-means_cluster/km_openmp.c	/^int main(int argc,char *argv[])$/;"	f
+main	hw1_k-means_cluster/km_pthreads.c	/^int main(int argc,char *argv[])$/;"	f
+main	hw1_k-means_cluster/shaden_km_openmp.c	/^int main($/;"	f
+main	hw2_radix/rs_mpi.c	/^int main($/;"	f
+main	hw2_radix/rs_openmp.c	/^int main( int argc, char *argv[] )$/;"	f
+main	hw2_radix/rs_serial.c	/^int main( int argc, char *argv[] )$/;"	f
+main	hw3_pagerank/pagerank.c	/^int main($/;"	f
+main	hw3_pagerank/pagerank_serial/pagerank_serial.c	/^int main($/;"	f
+main	llnl_pthread_tutorial/hello.c	/^int main (int argc, char *argv[])$/;"	f
+main	llnl_pthread_tutorial/hello_arg1.c	/^int main(int argc, char *argv[])$/;"	f
+main	llnl_pthread_tutorial/hello_arg2.c	/^int main(int argc, char *argv[])$/;"	f
+main	llnl_pthread_tutorial/hello_arg3.c	/^int main(int argc, char *argv[])$/;"	f
+main	llnl_pthread_tutorial/join.c	/^int main (int argc, char *argv[])$/;"	f
+main	test/hello_mpi.c	/^int main($/;"	f
+main	test/hello_omp.c	/^int main($/;"	f
+main	test/hello_pthreads.c	/^int main($/;"	f
+march	hw1_k-means_cluster/Makefile	/^	gcc -o km_openmp km_openmp.c timing.h -fopenmp -lm -Wall -O2 -march=native$/;"	m
+march	hw1_k-means_cluster/Makefile	/^	gcc -o km_pthreads km_pthreads.c timing.h -pthread -lm -Wall -O2 -march=native$/;"	m
+max_trials	hw1_k-means_cluster/km_openmp.c	/^static int max_trials = 20;$/;"	v	file:
+max_trials	hw1_k-means_cluster/km_pthreads.c	/^static int max_trials = 20;$/;"	v	file:
+message	llnl_pthread_tutorial/hello_arg2.c	/^    char *message;$/;"	m	struct:thread_data	file:
+messages	llnl_pthread_tutorial/hello_arg1.c	/^char *messages[NUM_THREADS];$/;"	v
+messages	llnl_pthread_tutorial/hello_arg2.c	/^char *messages[NUM_THREADS];$/;"	v
+mod	hw2_radix/rs_mpi.c	/^int mod (int n, int d)$/;"	f
+monotonic_seconds	hw1_k-means_cluster/shaden_km_openmp.c	/^static inline double monotonic_seconds()$/;"	f	file:
+monotonic_seconds	hw1_k-means_cluster/timing.h	/^static inline double monotonic_seconds()$/;"	f
+monotonic_seconds	hw2_radix/rs_openmp.c	/^static inline double monotonic_seconds()$/;"	f	file:
+nbrs	hw3_pagerank/pagerank_serial/pr_graph_serial.h	/^  pr_int * nbrs;$/;"	m	struct:__anon4
+nbrs	hw3_pagerank/pr_graph.h	/^  pr_int * nbrs;$/;"	m	struct:__anon5
+ncols	hw1_k-means_cluster/shaden_km_openmp.c	/^  int ncols;$/;"	m	struct:__anon1	file:
+ncols	hw2_radix/rs_mpi.c	/^    int ncols;$/;"	m	struct:__anon2	file:
+ncols	hw2_radix/rs_openmp.c	/^    int ncols;$/;"	m	struct:__anon3	file:
+nedges	hw3_pagerank/pagerank_serial/pr_graph_serial.h	/^  pr_int nedges;$/;"	m	struct:__anon4
+nedges	hw3_pagerank/pr_graph.h	/^  pr_int nedges;$/;"	m	struct:__anon5
+nrows	hw1_k-means_cluster/shaden_km_openmp.c	/^  int nrows;$/;"	m	struct:__anon1	file:
+nrows	hw2_radix/rs_mpi.c	/^    int nrows;$/;"	m	struct:__anon2	file:
+nrows	hw2_radix/rs_openmp.c	/^    int nrows;$/;"	m	struct:__anon3	file:
+num_clusters	hw1_k-means_cluster/km_pthreads.c	/^    int num_clusters;$/;"	m	struct:determine_centroid_data	file:
+num_clusters	hw1_k-means_cluster/km_pthreads.c	/^    int num_clusters;$/;"	m	struct:find_centroid_data	file:
+num_points	hw1_k-means_cluster/km_pthreads.c	/^    int num_points;$/;"	m	struct:determine_centroid_data	file:
+num_points	hw1_k-means_cluster/km_pthreads.c	/^    int num_points;$/;"	m	struct:find_centroid_data	file:
+nvtxs	hw3_pagerank/pagerank_serial/pr_graph_serial.h	/^  pr_int nvtxs;$/;"	m	struct:__anon4
+nvtxs	hw3_pagerank/pr_graph.h	/^  pr_int nvtxs;$/;"	m	struct:__anon5
+pagerank	hw3_pagerank/pagerank.c	/^double * pagerank($/;"	f
+pagerank	hw3_pagerank/pagerank_serial/pagerank_serial.c	/^double * pagerank($/;"	f
+plot_clusters2D	plot/plot_clusters2D.m	/^function plot_clusters2D(points_file, clusters_file, centroids_file)$/;"	f
+points	hw1_k-means_cluster/km_pthreads.c	/^    double *points;$/;"	m	struct:determine_centroid_data	file:
+points	hw1_k-means_cluster/km_pthreads.c	/^    double *points;$/;"	m	struct:find_centroid_data	file:
+pr_graph	hw3_pagerank/pagerank_serial/pr_graph_serial.h	/^} pr_graph;$/;"	t	typeref:struct:__anon4
+pr_graph	hw3_pagerank/pr_graph.h	/^} pr_graph;$/;"	t	typeref:struct:__anon5
+pr_graph_free	hw3_pagerank/pagerank_serial/pr_graph_serial.c	/^void pr_graph_free($/;"	f
+pr_graph_free	hw3_pagerank/pr_graph.c	/^void pr_graph_free($/;"	f
+pr_graph_load	hw3_pagerank/pagerank_serial/pr_graph_serial.c	/^pr_graph * pr_graph_load($/;"	f
+pr_graph_load	hw3_pagerank/pr_graph.c	/^pr_graph * pr_graph_load($/;"	f
+pr_int	hw3_pagerank/pagerank_serial/pr_graph_serial.h	/^typedef uint64_t pr_int;$/;"	t
+pr_int	hw3_pagerank/pr_graph.h	/^typedef uint64_t pr_int;$/;"	t
+print_numbers	hw2_radix/rs_mpi.c	/^static void print_numbers($/;"	f	file:
+print_numbers	hw2_radix/rs_openmp.c	/^static void print_numbers($/;"	f	file:
+print_time	hw1_k-means_cluster/km_openmp.c	/^static void print_time(double const seconds)$/;"	f	file:
+print_time	hw1_k-means_cluster/km_pthreads.c	/^static void print_time(double const seconds)$/;"	f	file:
+print_time	hw2_radix/rs_mpi.c	/^static void print_time($/;"	f	file:
+print_time	hw2_radix/rs_openmp.c	/^static void print_time($/;"	f	file:
+rand_int	hw1_k-means_cluster/shaden_km_openmp.c	/^int rand_int()$/;"	f
+read_matrix	hw1_k-means_cluster/shaden_km_openmp.c	/^km_matrix * read_matrix($/;"	f
+rs_free	hw2_radix/rs_mpi.c	/^void rs_free($/;"	f
+rs_free	hw2_radix/rs_openmp.c	/^void rs_free($/;"	f
+rs_malloc	hw2_radix/rs_mpi.c	/^void * rs_malloc($/;"	f
+rs_malloc	hw2_radix/rs_openmp.c	/^void * rs_malloc($/;"	f
+rs_matrix	hw2_radix/rs_mpi.c	/^} rs_matrix;$/;"	t	typeref:struct:__anon2	file:
+rs_matrix	hw2_radix/rs_openmp.c	/^} rs_matrix;$/;"	t	typeref:struct:__anon3	file:
+rs_matrix_alloc	hw2_radix/rs_mpi.c	/^rs_matrix * rs_matrix_alloc($/;"	f
+rs_matrix_alloc	hw2_radix/rs_openmp.c	/^rs_matrix * rs_matrix_alloc($/;"	f
+rs_matrix_copy	hw2_radix/rs_mpi.c	/^rs_matrix * rs_matrix_copy($/;"	f
+rs_matrix_free	hw2_radix/rs_mpi.c	/^void rs_matrix_free($/;"	f
+rs_matrix_free	hw2_radix/rs_openmp.c	/^void rs_matrix_free($/;"	f
+rs_matrix_transpose	hw2_radix/rs_mpi.c	/^void rs_matrix_transpose($/;"	f
+sum	llnl_pthread_tutorial/hello_arg2.c	/^    int sum;$/;"	m	struct:thread_data	file:
+thread_data	llnl_pthread_tutorial/hello_arg2.c	/^struct thread_data$/;"	s	file:
+thread_data_array	llnl_pthread_tutorial/hello_arg2.c	/^struct thread_data thread_data_array[NUM_THREADS];$/;"	v	typeref:struct:thread_data
+thread_id	llnl_pthread_tutorial/hello_arg2.c	/^    int thread_id;$/;"	m	struct:thread_data	file:
+update_centroids	hw1_k-means_cluster/shaden_km_openmp.c	/^void update_centroids($/;"	f
+update_flag	hw1_k-means_cluster/km_pthreads.c	/^    int *update_flag;$/;"	m	struct:find_centroid_data	file:
+vals	hw1_k-means_cluster/shaden_km_openmp.c	/^  double * vals;$/;"	m	struct:__anon1	file:
+vals	hw2_radix/rs_mpi.c	/^    int *vals;$/;"	m	struct:__anon2	file:
+vals	hw2_radix/rs_openmp.c	/^    int *vals;$/;"	m	struct:__anon3	file:
+vector_distance	hw1_k-means_cluster/shaden_km_openmp.c	/^static inline double vector_distance($/;"	f	file:
+write_matrix	hw1_k-means_cluster/shaden_km_openmp.c	/^void write_matrix($/;"	f
+xadj	hw3_pagerank/pagerank_serial/pr_graph_serial.h	/^  pr_int * xadj;$/;"	m	struct:__anon4
+xadj	hw3_pagerank/pr_graph.h	/^  pr_int * xadj;$/;"	m	struct:__anon5

@@ -2,6 +2,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <math.h>
+#include "mpi.h"
 
 #include "pr_graph.h"
 
@@ -26,6 +27,8 @@ int main(
     int argc,
     char * * argv)
 {
+  MPI_Init(&argc, &argv);
+
   if(argc == 1) {
     fprintf(stderr, "usage: %s <graph> [output file]\n", *argv);
     return EXIT_FAILURE;
@@ -42,9 +45,12 @@ int main(
     return EXIT_FAILURE;
   }
 
+  /*
   double * PR = pagerank(graph, 0.85, 100);
+  */
 
   /* write pagerank values */
+  /*
   if(ofname) {
     FILE * fout = fopen(ofname, "w");
     if(!fout) {
@@ -58,6 +64,7 @@ int main(
   }
 
   free(PR);
+  */
 
   return EXIT_SUCCESS;
 }
