@@ -13,6 +13,7 @@
 #include <math.h>
 
 #include "pr_graph.h"
+#include "pr_utils.h"
 
 
 
@@ -21,7 +22,6 @@ pr_graph * pr_graph_load(
 {
 
   int pid;
-  pr_int nvtxs, nedges;
   MPI_Status status;
 
   pr_graph *graph = malloc(sizeof(*graph));

@@ -6,7 +6,6 @@
 #include "mpi.h"
 
 typedef uint64_t pr_int;
-//typedef MPI_UINT64_T pr_mpi_int;
 #define pr_mpi_int MPI_UINT64_T
 
 

@@ -5,6 +5,8 @@
 #include "mpi.h"
 
 #include "pr_graph.h"
+#include "pr_utils.h"
+#include "pr_accum.h"
 
 
 
@@ -44,6 +46,39 @@ int main(
   if(!graph) {
     return EXIT_FAILURE;
   }
+
+  pr_int * arr;
+  arr = malloc( 5 * sizeof(pr_int) );
+
+  for ( pr_int i=0; i < 5; i++ ) {
+    arr[i] = 2*i + 1;
+  }
+
+  pr_int ind;
+  for (pr_int i=0; i<6; i++) {
+    ind = binary_search(arr, 5, 2*i + 1);
+  }
+
+  pr_accum * accum = malloc(sizeof(pr_accum));
+
+  accum->send_ind = malloc( 6 * sizeof(pr_int) );
+  accum->nvals = 0;
+  pr_accum_add_vtx(accum, 1);
+  pr_accum_add_vtx(accum, 4);
+  pr_accum_add_vtx(accum, 3);
+  pr_accum_add_vtx(accum, 1);
+  pr_accum_add_vtx(accum, 3);
+  pr_accum_add_vtx(accum, 1);
+
+  pr_accum_condense(accum);
+
+  pr_accum_zero_vals(accum);
+
+  pr_accum_add_val(accum, 1.5, 2);
+  pr_accum_add_val(accum, 1.1, 1);
+  pr_accum_add_val(accum, 2.3, 2);
+
+  pr_accum_free(accum);
 
   /*
   double * PR = pagerank(graph, 0.85, 100);

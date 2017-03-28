@@ -4,15 +4,19 @@
 !_TAG_PROGRAM_NAME	Exuberant Ctags	//
 !_TAG_PROGRAM_URL	http://ctags.sourceforge.net	/official site/
 !_TAG_PROGRAM_VERSION	5.9~svn20110310	//
-PAGERANK_GRAPH_H	pagerank/pr_graph.h	2;"	d
-_POSIX_C_SOURCE	pagerank/pr_graph.c	5;"	d	file:
-main	pagerank/pagerank.c	/^int main($/;"	f
-nbrs	pagerank/pr_graph.h	/^  pr_int * nbrs;$/;"	m	struct:__anon1
-nedges	pagerank/pr_graph.h	/^  pr_int nedges;$/;"	m	struct:__anon1
-nvtxs	pagerank/pr_graph.h	/^  pr_int nvtxs;$/;"	m	struct:__anon1
-pagerank	pagerank/pagerank.c	/^double * pagerank($/;"	f
-pr_graph	pagerank/pr_graph.h	/^} pr_graph;$/;"	t	typeref:struct:__anon1
-pr_graph_free	pagerank/pr_graph.c	/^void pr_graph_free($/;"	f
-pr_graph_load	pagerank/pr_graph.c	/^pr_graph * pr_graph_load($/;"	f
-pr_int	pagerank/pr_graph.h	/^typedef uint64_t pr_int;$/;"	t
-xadj	pagerank/pr_graph.h	/^  pr_int * xadj;$/;"	m	struct:__anon1
+CC	Makefile	/^CC = mpicc$/;"	m
+GetChunkSize	pr_utils.c	/^int GetChunkSize($/;"	f
+GetNumChunks	pr_utils.c	/^int GetNumChunks($/;"	f
+PAGERANK_GRAPH_H	pr_graph.h	2;"	d
+_POSIX_C_SOURCE	pr_graph.c	5;"	d	file:
+main	pagerank.c	/^int main($/;"	f
+nbrs	pr_graph.h	/^  pr_int * nbrs;$/;"	m	struct:__anon1
+nedges	pr_graph.h	/^  pr_int nedges;$/;"	m	struct:__anon1
+nvtxs	pr_graph.h	/^  pr_int nvtxs;$/;"	m	struct:__anon1
+pagerank	pagerank.c	/^double * pagerank($/;"	f
+pr_graph	pr_graph.h	/^} pr_graph;$/;"	t	typeref:struct:__anon1
+pr_graph_free	pr_graph.c	/^void pr_graph_free($/;"	f
+pr_graph_load	pr_graph.c	/^pr_graph * pr_graph_load($/;"	f
+pr_int	pr_graph.h	/^typedef uint64_t pr_int;$/;"	t
+pr_mpi_int	pr_graph.h	10;"	d
+xadj	pr_graph.h	/^  pr_int * xadj;$/;"	m	struct:__anon1

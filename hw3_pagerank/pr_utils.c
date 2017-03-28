@@ -25,3 +25,27 @@ int GetChunkSize(
     }
     return stop;
 }
+
+pr_int binary_search(
+    pr_int * arr,
+    pr_int arr_size,
+    pr_int val)
+{
+  pr_int start, end, mid;
+
+  start = 0;
+  end = arr_size-1;
+  do {
+    if (start > end)
+      return -1;
+
+    mid = (start + end) / 2;
+
+    if (arr[mid] < val)
+      start = mid+1;
+    else if (arr[mid] > val)
+      end = mid-1;
+    else if (arr[mid] == val)
+      return mid;
+  } while(1);
+}
