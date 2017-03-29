@@ -10,7 +10,7 @@ void pr_accum_add_vtx(
     pr_int const vtx)
 {
   accum->send_ind[accum->nvals] = vtx;
-  accum->nvals++;
+  ++accum->nvals;
 }
 
 void pr_accum_add_val(
@@ -37,9 +37,30 @@ void pr_accum_zero_vals(
   }
 }
 
-void pr_accum_condense(
+pr_accum *  pr_accum_build(
+    pr_graph const * const graph)
+{
+  pr_accum * big_accum = malloc( sizeof(pr_accum) );
+  big_accum->nvals = 1;
+  big_accum->send_ind = malloc( graph->nedges * sizeof(pr_int) );
+  big_accum->vals = malloc( graph->nedges * sizeof(pr_int) );
+
+  /* Add incident vertex for each edge to accumulator */
+  for (pr_int e = 0; e < graph->nedges; e++) {
+    pr_accum_add_vtx(big_accum, graph->nbrs[e]);
+  }
+
+  pr_accum * accum = pr_accum_condense(big_accum);
+
+  return accum;
+}
+
+pr_accum * pr_accum_condense(
     pr_accum * accum)
 {
+
+  pr_accum * new_accum = malloc( sizeof(pr_accum) );
+  new_accum->nvals = 0;
 
   radix_sort(accum->send_ind, accum->nvals);
 
@@ -53,23 +74,25 @@ void pr_accum_condense(
       ++count;
   }
 
-  pr_int * new_send_ind = malloc( count * sizeof(pr_int) );
+  new_accum->send_ind = malloc( count * sizeof(pr_int) );
 
-  count = 1;
-  new_send_ind[0] = accum->send_ind[0];
+  //new_accum->send_ind[0] = accum->send_ind[0];
+  pr_accum_add_vtx( new_accum, accum->send_ind[0]);
 
   /* Create new send_ind array with only unique vertex IDs */
   for (pr_int i=1; i<accum->nvals; i++) {
     if (accum->send_ind[i] != accum->send_ind[i-1]) {
-      new_send_ind[count] = accum->send_ind[i];
-      count++;
+      //new_accum->send_ind[count] = accum->send_ind[i];
+      //count++;
+      pr_accum_add_vtx( new_accum, accum->send_ind[i] );
     }
   }
 
-  accum->nvals = count;
-  free(accum->send_ind);
-  accum->send_ind = new_send_ind;
-  accum->vals = malloc( accum->nvals * sizeof(pr_int) );
+  //new_accum->nvals = count;
+  free(accum);
+  new_accum->vals = malloc( accum->nvals * sizeof(pr_int) );
+
+  return new_accum;
 
 }
 

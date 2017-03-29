@@ -32,15 +32,14 @@ pr_graph * pr_graph_load(
   {
     pr_int *pvtxs, *pedges; /* arrays for storing number of vertices and edges for each process */
     int npes, ideal_vtxs;
-    pr_int total_vtxs=0, total_edges=0;
 
     char * line = malloc(1024 * 1024);
     size_t len = 0;
 
+    MPI_Comm_size(MPI_COMM_WORLD, &npes);
+
     pvtxs = malloc(npes * sizeof(pr_int));
     pedges = malloc(npes * sizeof(pr_int));
-
-    MPI_Comm_size(MPI_COMM_WORLD, &npes);
 
     FILE * fin = fopen(ifname, "r");
     if(!fin) {
@@ -51,17 +50,17 @@ pr_graph * pr_graph_load(
     pr_graph * send_graph = malloc(sizeof(*graph));
 
     /* read nvtxs and nedges */
-    fscanf(fin, "%lu", &total_vtxs);
-    fscanf(fin, "%lu", &total_edges);
+    fscanf(fin, "%lu", &(graph->tvtxs));
+    fscanf(fin, "%lu", &(graph->tedges));
     fscanf(fin, "\n"); /* make sure we process the newline, too. */
 
     /* ideal number of vertices per process */
-    ideal_vtxs = (pr_int) ceil( ((double) total_vtxs) / npes );
+    ideal_vtxs = (pr_int) ceil( ((double) graph->tvtxs) / npes );
 
     for (int i=0; i<npes; i++)
     {
       /* number of vertices assigned to process i */
-      pvtxs[i] = GetChunkSize(i, ideal_vtxs, total_vtxs);
+      pvtxs[i] = GetChunkSize(i, ideal_vtxs, graph->tvtxs);
       pedges[i] = 0;
 
       for (pr_int v=0; v < pvtxs[i]; ++v) {
@@ -78,6 +77,9 @@ pr_graph * pr_graph_load(
 
     rewind(fin); /* Start reading from beginning of file */
     ssize_t read = getline(&line, &len, fin); /* Read first line containing V and E */
+
+    MPI_Bcast( &(graph->tvtxs), 1, pr_mpi_int, 0, MPI_COMM_WORLD );
+    MPI_Bcast( &(graph->tedges), 1, pr_mpi_int, 0, MPI_COMM_WORLD );
 
     MPI_Scatter( pvtxs, 1, pr_mpi_int, &(graph->nvtxs), 1, pr_mpi_int, 0, MPI_COMM_WORLD );
     MPI_Scatter( pedges, 1, pr_mpi_int, &(graph->nedges), 1, pr_mpi_int, 0, MPI_COMM_WORLD );
@@ -116,7 +118,7 @@ pr_graph * pr_graph_load(
         if(ptr == end) {
           break;
         }
-        assert(e_id > 0 && e_id <= total_vtxs);
+        assert(e_id > 0 && e_id <= graph->tvtxs);
 
         graph->nbrs[edge_ptr++] = e_id - 1; /* 1 indexed */
         ptr = strtok(NULL, " ");
@@ -161,7 +163,7 @@ pr_graph * pr_graph_load(
           if(ptr == end) {
             break;
           }
-          assert(e_id > 0 && e_id <= total_vtxs);
+          assert(e_id > 0 && e_id <= graph->tvtxs);
 
           send_graph->nbrs[edge_ptr++] = e_id - 1; /* 1 indexed */
           ptr = strtok(NULL, " ");
@@ -185,6 +187,9 @@ pr_graph * pr_graph_load(
   }
 
   else {
+    MPI_Bcast( &(graph->tvtxs), 1, pr_mpi_int, 0, MPI_COMM_WORLD );
+    MPI_Bcast( &(graph->tedges), 1, pr_mpi_int, 0, MPI_COMM_WORLD );
+
     MPI_Scatter( NULL, 0, pr_mpi_int, &(graph->nvtxs), 1, pr_mpi_int, 0, MPI_COMM_WORLD );
     MPI_Scatter( NULL, 0, pr_mpi_int, &(graph->nedges), 1, pr_mpi_int, 0, MPI_COMM_WORLD );
 

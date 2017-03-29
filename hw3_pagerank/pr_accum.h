@@ -4,6 +4,8 @@
 #include <stdint.h>
 #include "mpi.h"
 
+#include "pr_graph.h"
+
 typedef uint64_t pr_int;
 
 /**
@@ -53,11 +55,19 @@ void pr_accum_zero_vals(
     pr_accum * accum);
 
 /**
+ * @brief Build sparsity structure of accumulator
+ *
+ * @param graph Graph to get sparsity from
+ */
+pr_accum * pr_accum_build(
+    pr_graph const * const graph);
+
+/**
  * @brief Sort send_ind and remove redundant vertices
  *
  * @param accum Accumulator to condense
  */
-void pr_accum_condense(
+pr_accum * pr_accum_condense(
     pr_accum * accum);
 
 /**

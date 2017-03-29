@@ -14,10 +14,14 @@ typedef uint64_t pr_int;
 */
 typedef struct
 {
-  /** The number of vertices in the graph. */
+  /** The number of vertices in the graph stored on the current process. */
   pr_int nvtxs;
   /** The number of edges in the graph. */
   pr_int nedges;
+  /** The total number of vertices across all processes. */
+  pr_int tvtxs;
+  /** The total number of edges across all processes. */
+  pr_int tedges;
 
   /** The sparsity structure of the adjacency list. Vertex v has outgoing edges
    *  xadj[v] (inclusive) to xadj[v+1] (exclusive). */
