@@ -183,7 +183,7 @@ pr_graph * pr_graph_load(
     free(line);
     free(pvtxs);
     free(pedges);
-    pr_graph_free(send_graph);
+    free(send_graph);
   }
 
   else {

@@ -82,6 +82,8 @@ int main(
 
   free(PR);
 
+  MPI_Finalize();
+
   return EXIT_SUCCESS;
 }
 
@@ -183,7 +185,7 @@ void CreateCommArrays(
   pr_int count = 0;
   for (pr_int v = 0; v < accum->nvals; v++)
   {
-    while (accum->send_ind[v] > (p_curr+1) * ideal_vtxs) {
+    while (accum->send_ind[v] >= (p_curr+1) * ideal_vtxs) {
       *(sendcounts[0]+p_curr) = count;
       p_curr++;
       *(sdispls[0]+p_curr) = *(sdispls[0]+p_curr-1) + count;
@@ -191,7 +193,9 @@ void CreateCommArrays(
     }
     count++;
   }
-  *(sendcounts[0]+p_curr) = count;
+  for (pr_int i = p_curr; i<npes; i++) {
+    *(sendcounts[0]+p_curr) = count;  /* Fill in rest of sendcounts */
+  }
 
   MPI_Alltoall( *sendcounts, 1, pr_mpi_int, *recvcounts, 1, pr_mpi_int, MPI_COMM_WORLD );
 

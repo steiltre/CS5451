@@ -41,7 +41,7 @@ pr_accum *  pr_accum_build(
     pr_graph const * const graph)
 {
   pr_accum * big_accum = malloc( sizeof(pr_accum) );
-  big_accum->nvals = 1;
+  big_accum->nvals = 0;
   big_accum->send_ind = malloc( graph->nedges * sizeof(pr_int) );
   big_accum->vals = malloc( graph->nedges * sizeof(pr_int) );
 
@@ -89,7 +89,7 @@ pr_accum * pr_accum_condense(
   }
 
   //new_accum->nvals = count;
-  free(accum);
+  pr_accum_free(accum);
   new_accum->vals = malloc( accum->nvals * sizeof(pr_int) );
 
   return new_accum;
