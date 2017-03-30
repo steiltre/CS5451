@@ -114,11 +114,23 @@ double * pagerank(
 
   int ideal_vtxs = (int) ceil( ((double) tvtxs) / npes );
 
+  double setup_start = MPI_Wtime();
+
   /* Create accumulator */
   pr_accum * accum = pr_accum_build(graph);
 
+  double accum_stop = MPI_Wtime();
+  if (pid == 0) {
+    printf("Accum: %0.03fs\n", accum_stop - setup_start);
+  }
+
   int * sendcounts, * sdispls, * recvcounts, * rdispls;
   CreateCommArrays(accum, graph, &sendcounts, &sdispls, &recvcounts, &rdispls);
+
+  double setup_stop = MPI_Wtime();
+  if (pid == 0) {
+    printf("Comm Array: %0.03fs\n", setup_stop - accum_stop);
+  }
 
   pr_int * recv_inds = malloc( rdispls[npes] * sizeof( *recv_inds ) );
   double * recv_vals = malloc( rdispls[npes] * sizeof( *recv_vals ) );

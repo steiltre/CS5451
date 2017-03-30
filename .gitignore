@@ -23,9 +23,16 @@
 */km_openmp
 */rs_openmp
 */rs_mpi
+*/rs_serial
+*/pagerank
+*/pagerank_serial
 
 #ignore .tar.gz
 *.tar.gz
 
 #remove files from CSCI 5451 homework 1 plotting
 .fuse*
+
+#graph and pagerank files from CSCI 5451 homework 3
+*.graph
+*.pr.txt

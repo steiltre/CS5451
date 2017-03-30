@@ -1,4 +1,5 @@
 #include <math.h>
+#include <stdlib.h>
 
 #include "pr_utils.h"
 
@@ -13,10 +14,10 @@ static pr_int const BIT_CHUNK_SIZE = 4;
 static pr_int const NUM_BITS = 64;
 
 pr_int GetMask(
-        pr_int const num_bits)
+        int const num_bits)
 {
     pr_int mask = 0;
-    for (pr_int j=0; j<num_bits; j++)
+    for (int j=0; j<num_bits; j++)
     {
         mask += pow(2,j);
     }
@@ -26,15 +27,18 @@ pr_int GetMask(
 
 void SortOnRadix(
         pr_int *arr,
-        pr_int i,
-        pr_int num,
-        pr_int num_bins,
-        pr_int *bin_start,
+        int i,
+        int num,
+        int num_bins,
+        int *bin_start,
         pr_int mask)
 {
-    pr_int curr_ind[num_bins];
-    pr_int output[num];
-    pr_int j;
+    int * curr_ind;
+    pr_int * output;
+    int j;
+
+    output = malloc( num * sizeof(*output) );
+    curr_ind = malloc( num_bins * sizeof(*curr_ind) );
 
     // Initialize curr_ind to starting location of bins
     for (j=0; j<num_bins; j++)
@@ -45,7 +49,7 @@ void SortOnRadix(
     // Scan array putting values in order for output
     for (j=0; j<num; j++)
     {
-        for (pr_int k=0; k<num_bins; k++)
+        for (int k=0; k<num_bins; k++)
         {
             if ( ((arr[j] >> i * BIT_CHUNK_SIZE) & mask) == k)
             {
@@ -60,20 +64,23 @@ void SortOnRadix(
     {
         arr[j] = output[j];
     }
+
+    free(output);
+    free(curr_ind);
 }
 
 void DetermineBinSizes(
         pr_int *arr,
         pr_int i,
-        pr_int num,
-        pr_int num_bins,
+        int num,
+        int num_bins,
         pr_int mask,
-        pr_int *bin_sizes)
+        int *bin_sizes)
 {
     // Scan array once to find where 0's end and 1's begin
-    for (pr_int j=0; j<num; j++)
+    for (int j=0; j<num; j++)
     {
-        for (pr_int k=0; k<num_bins; k++)
+        for (int k=0; k<num_bins; k++)
         {
             if ( ((arr[j] >> i * BIT_CHUNK_SIZE) & mask) == k)
             {
@@ -84,36 +91,39 @@ void DetermineBinSizes(
 }
 
 void BinStartIndices(
-        pr_int *bin_sizes,
-        pr_int num_bins,
-        pr_int *bin_start)
+        int *bin_sizes,
+        int num_bins,
+        int *bin_start)
 {
     bin_start[0] = 0;
 
-    for (pr_int i=1; i<num_bins; i++)
+    for (int i=1; i<num_bins; i++)
     {
         bin_start[i] = bin_start[i-1] + bin_sizes[i-1];
     }
 }
 
-void radix_sort(pr_int *arr, pr_int num)
+void radix_sort(pr_int *arr, int num)
 {
-    pr_int num_bits;
-    pr_int num_bins;
-    pr_int max_bins = pow(2,BIT_CHUNK_SIZE);  // Largest number of bins possible
-    pr_int bin_sizes[max_bins];
-    pr_int bin_start[max_bins];
+    int num_bits;
+    int num_bins;
+    int max_bins = pow(2,BIT_CHUNK_SIZE);  // Largest number of bins possible
+    int * bin_sizes;
+    int * bin_start;
 
-    pr_int max_iter = GetNumChunks( BIT_CHUNK_SIZE, NUM_BITS );
+    bin_sizes = malloc( max_bins * sizeof(*bin_sizes) );
+    bin_start = malloc( max_bins * sizeof(*bin_start) );
 
-    for (pr_int i=0; i<max_iter; i++)
+    int max_iter = GetNumChunks( BIT_CHUNK_SIZE, NUM_BITS );
+
+    for (int i=0; i<max_iter; i++)
     {
 
         num_bits = GetChunkSize( i, BIT_CHUNK_SIZE, NUM_BITS );
         num_bins = pow(2,num_bits);
         pr_int mask = GetMask(num_bits);
 
-        for (pr_int j=0; j<num_bins; j++)
+        for (int j=0; j<num_bins; j++)
         {
             bin_sizes[j] = 0;
         }
@@ -122,4 +132,7 @@ void radix_sort(pr_int *arr, pr_int num)
         BinStartIndices(bin_sizes, num_bins, bin_start);
         SortOnRadix(arr, i, num, num_bins, bin_start, mask);
     }
+
+    free(bin_sizes);
+    free(bin_start);
 }

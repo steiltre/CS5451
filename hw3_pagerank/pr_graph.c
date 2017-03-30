@@ -70,6 +70,7 @@ pr_graph * pr_graph_load(
         char *ptr = strtok(line, " ");
         while(ptr != NULL) {
           char *end = NULL;
+          pr_int const e_id = strtoull(ptr, &end, 10);
           if (ptr == end) {
             break;
           }

@@ -2,7 +2,6 @@
 #include <stdint.h>
 #include <stdlib.h>
 #include <math.h>
-#include "rs_shared.h"
 
 /**
  * @brief Number of bits to sort with at one time
@@ -13,6 +12,54 @@ static int const BIT_CHUNK_SIZE = 3;
  * @brief Width of integers being sorted
  */
 static int const NUM_BITS = 32;
+
+/* Gives us high-resolution timers. */
+#define _POSIX_C_SOURCE 200809L
+#include <time.h>
+
+/* OSX timer includes */
+#ifdef __MACH__
+  #include <mach/mach.h>
+  #include <mach/mach_time.h>
+#endif
+
+/**
+ * * @brief Return the number of seconds since an unspecified time (e.g., Unix
+ * *        epoch). This is accomplished with a high-resolution monotonic timer,
+ * *        suitable for performance timing.
+ * *
+ * * @return The number of seconds.
+ * */
+static inline double monotonic_seconds()
+{
+#ifdef __MACH__
+      /* OSX */
+      static mach_timebase_info_data_t info;
+        static double seconds_per_unit;
+          if(seconds_per_unit == 0) {
+                  mach_timebase_info(&info);
+                      seconds_per_unit = (info.numer / info.denom) / 1e9;
+                        }
+            return seconds_per_unit * mach_absolute_time();
+#else
+              /* Linux systems */
+              struct timespec ts;
+                clock_gettime(CLOCK_MONOTONIC, &ts);
+                  return ts.tv_sec + ts.tv_nsec * 1e-9;
+#endif
+}
+
+/**
+ * * @brief Output the seconds elapsed while sorting. This excludes input and
+ * *        output time. This should be wallclock time, not CPU time.
+ * *
+ * * @param seconds Seconds spent sorting.
+ * */
+static void print_time(
+            double const seconds)
+{
+      printf("Sort Time: %0.04fs\n", seconds);
+}
 
 /**
  * @brief Compute the number of chunks to span a set of items
@@ -250,7 +297,7 @@ int main( int argc, char *argv[] )
 
     print_time(monotonic_seconds()-start);
 
-    print_numbers( outfile, numbers, num );
+    //print_numbers( outfile, numbers, num );
 
     return 0;
 }
