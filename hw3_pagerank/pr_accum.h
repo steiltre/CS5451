@@ -67,7 +67,7 @@ pr_accum * pr_accum_build(
  *
  * @param accum Accumulator to condense
  */
-pr_accum * pr_accum_condense(
+void pr_accum_condense(
     pr_accum * accum);
 
 /**

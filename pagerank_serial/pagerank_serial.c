@@ -110,7 +110,7 @@ double * pagerank(
       double const old = PR[v];
       PR[v] = restart + (damping * PR_accum[v]);
 
-      norm_changed = (PR[v] - old) * (PR[v] - old);
+      norm_changed += (PR[v] - old) * (PR[v] - old);
     }
     norm_changed = sqrt(norm_changed);
 
