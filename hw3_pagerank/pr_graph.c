@@ -69,6 +69,10 @@ pr_graph * pr_graph_load(
         /* For each edge in line */
         char *ptr = strtok(line, " ");
         while(ptr != NULL) {
+          char *end = NULL;
+          if (ptr == end) {
+            break;
+          }
           pedges[i]++;
           ptr = strtok(NULL, " ");
         }
