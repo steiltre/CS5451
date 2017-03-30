@@ -13,4 +13,4 @@ rs_mpi: rs_mpi.c
 	mpicc -o rs_mpi rs_mpi.c $(CCFLAGS)
 
 rs_serial: rs_serial.c
-	gcc -g rs_serial.c $(CCFLAGS)
+	gcc -o rs_serial rs_serial.c $(CCFLAGS)
