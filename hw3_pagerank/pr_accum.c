@@ -6,6 +6,8 @@
 #include "pr_utils.h"
 #include "pr_radix_sort.h"
 
+#define SORT
+
 void pr_accum_add_vtx(
     pr_accum * accum,
     pr_int const vtx)
@@ -47,28 +49,35 @@ pr_accum *  pr_accum_build(
   accum->send_ind = malloc( graph->nedges * sizeof(*accum->send_ind) );
   accum->vals = malloc( graph->nedges * sizeof(*accum->vals) );
   accum->bdry = malloc( (npes+1) * sizeof(*accum->bdry) );
+  accum->send_proc_ind = malloc( graph->nedges * sizeof(*accum->send_proc_ind) );
 
   int * accum_ind = malloc( npes * sizeof(*accum_ind) );
 
-  //pr_accum_make_bdry(accum, graph);
-
+#ifdef SORT
   /* Add incident vertex for each edge to accumulator */
-  /*
   for (pr_int e = 0; e < graph->nedges; e++) {
     pr_accum_add_vtx(accum, graph->nbrs[e]);
   }
 
   pr_accum_condense(accum);
-  */
+#endif
 
+#ifndef SORT
   for (int i=0; i<npes+1; i++) {
     accum->bdry[i] = 0;
   }
 
   int ideal_vtxs = (int) ceil( ((double) graph->tvtxs ) / npes );
+  int proc_ind = 0;
   for (pr_int e = 0; e < graph->nedges; e++) {
-    int ind = (graph->nbrs[e] / ideal_vtxs);
-    accum->bdry[ind+1]++;
+    while (graph->nbrs[e] >= ideal_vtxs * (proc_ind+1) || graph->nbrs[e] < ideal_vtxs * proc_ind)
+    {
+      proc_ind = (proc_ind+1)%npes;
+    }
+    accum->bdry[proc_ind+1]++;
+#ifdef PRECOMP_SEND_PROC
+    accum->send_proc_ind[e] = proc_ind;
+#endif
   }
 
   for (int i = 0; i<npes; i++) {
@@ -86,6 +95,7 @@ pr_accum *  pr_accum_build(
   }
 
   free(accum_ind);
+#endif
 
   return accum;
 }
@@ -100,8 +110,6 @@ void pr_accum_condense(
   pr_int * new_send_ind;
 
   radix_sort(accum->send_ind, accum->nvals);
-
-  /* DOESN'T HANDLE EMPTY ACCUMULATOR CORRECTLY */
 
   /* Counter for number of unique indices in send_ind */
   int count = 1;

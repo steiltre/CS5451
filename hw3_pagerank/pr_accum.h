@@ -19,6 +19,9 @@ typedef struct
   /** Indices of vertices to send values to */
   pr_int * send_ind;
 
+  /** Process IDs associated to each receiving vertex */
+  int * send_proc_ind;
+
   /** Partitions sent to each process */
   pr_int * bdry;
 
