@@ -164,6 +164,8 @@ double * pagerank(
 
     pr_accum_zero_vals(accum);
 
+    double accum_start = MPI_Wtime();
+
     /* Each vertex pushes PR contribution to all outgoing links */
     for(pr_int v=0; v < nvtxs; ++v) {
       double const num_links = (double)(xadj[v+1] - xadj[v]);
@@ -174,11 +176,25 @@ double * pagerank(
       }
     }
 
+    double accum_end = MPI_Wtime();
+    if (pid == 0) {
+      printf("Accum Time: %0.03fs\n", accum_end - accum_start);
+    }
+
+    double all_start = MPI_Wtime();
+
     /* Communicate values */
     MPI_Alltoallv( accum->send_ind, sendcounts, sdispls, pr_mpi_int, recv_inds, recvcounts, rdispls, pr_mpi_int, MPI_COMM_WORLD );
     MPI_Alltoallv( accum->vals, sendcounts, sdispls, MPI_DOUBLE, recv_vals, recvcounts, rdispls, pr_mpi_int, MPI_COMM_WORLD );
 
-    /* Finalize new PR values */
+    double all_end = MPI_Wtime();
+    if (pid == 0) {
+      printf("Alltoall Time: %0.03fs\n", all_end - all_start);
+    }
+
+    double pr_start = MPI_Wtime();
+
+    /* Initialize new PR values */
     double norm_changed = 0.;
     double global_norm_changed = 0;
     for(pr_int v=0; v < nvtxs; ++v) {
@@ -193,6 +209,11 @@ double * pagerank(
     /* Calculate local contribution to Frobenius norm */
     for (pr_int v=0; v < nvtxs; ++v) {
       norm_changed += (PR_new[v] - PR_old[v]) * (PR_new[v] - PR_old[v]);
+    }
+
+    double pr_end = MPI_Wtime();
+    if (pid == 0) {
+      printf("PR Calc: %0.03fs\n", pr_end-pr_start);
     }
 
     /* Communicate global Frobenius norm */
@@ -249,8 +270,10 @@ void CreateCommArrays(
     }
     count++;
   }
-  for (int i = p_curr; i<npes; i++) {
-    *(sendcounts[0]+p_curr) = count;  /* Fill in rest of sendcounts */
+  for (int i = p_curr; i<npes; i++) {  /* Fill in rest of sendcounts */
+    *(sendcounts[0]+i) = count;
+    *(sdispls[0]+i+1) = *(sdispls[0]+i) + count;
+    count = 0;
   }
 
   MPI_Alltoall( *sendcounts, 1, MPI_INT, *recvcounts, 1, MPI_INT, MPI_COMM_WORLD );

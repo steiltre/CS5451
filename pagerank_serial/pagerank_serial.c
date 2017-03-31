@@ -3,8 +3,43 @@
 #include <stdlib.h>
 #include <math.h>
 
+/* Gives us high-resolution timers. */
+#define _POSIX_C_SOURCE 200809L
+#include <time.h>
+
+/* OSX timer includes */
+#ifdef __MACH__
+  #include <mach/mach.h>
+  #include <mach/mach_time.h>
+#endif
+
 #include "pr_graph_serial.h"
 
+/**
+ * * @brief Return the number of seconds since an unspecified time (e.g., Unix
+ * *        epoch). This is accomplished with a high-resolution monotonic timer,
+ * *        suitable for performance timing.
+ * *
+ * * @return The number of seconds.
+ * */
+static inline double monotonic_seconds()
+{
+#ifdef __MACH__
+      /* OSX */
+      static mach_timebase_info_data_t info;
+        static double seconds_per_unit;
+          if(seconds_per_unit == 0) {
+                  mach_timebase_info(&info);
+                      seconds_per_unit = (info.numer / info.denom) / 1e9;
+                        }
+            return seconds_per_unit * mach_absolute_time();
+#else
+              /* Linux systems */
+              struct timespec ts;
+                clock_gettime(CLOCK_MONOTONIC, &ts);
+                  return ts.tv_sec + ts.tv_nsec * 1e-9;
+#endif
+}
 
 
 /**
@@ -20,7 +55,6 @@ double * pagerank(
     pr_graph const * const graph,
     double const damping,
     int const max_iterations);
-
 
 int main(
     int argc,
@@ -74,6 +108,8 @@ double * pagerank(
   pr_int const * const restrict xadj = graph->xadj;
   pr_int const * const restrict nbrs = graph->nbrs;
 
+  double start = monotonic_seconds();
+
   /* Initialize pageranks to be a probability distribution. */
   double * PR = malloc(nvtxs * sizeof(*PR));
   for(pr_int v=0; v < nvtxs; ++v) {
@@ -104,6 +140,8 @@ double * pagerank(
       }
     }
 
+    double pr_start = monotonic_seconds();
+
     /* Finalize new PR values */
     double norm_changed = 0.;
     for(pr_int v=0; v < nvtxs; ++v) {
@@ -114,7 +152,13 @@ double * pagerank(
     }
     norm_changed = sqrt(norm_changed);
 
+    double pr_end = monotonic_seconds();
+    printf("PR Calc: %0.03fs\n", pr_end - pr_start);
+
     if(i > 1 && norm_changed < tol) {
+
+      double end = monotonic_seconds();
+      printf("number of iterations: %i average time: %0.03fs\n", i, end-start);
       break;
     }
   }
