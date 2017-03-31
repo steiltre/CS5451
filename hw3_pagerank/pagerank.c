@@ -117,7 +117,7 @@ double * pagerank(
   double setup_start = MPI_Wtime();
 
   /* Create accumulator */
-  pr_accum * accum = pr_accum_build(graph);
+  pr_accum * accum = pr_accum_build(graph, npes);
 
   double accum_stop = MPI_Wtime();
   if (pid == 0) {
@@ -134,6 +134,9 @@ double * pagerank(
 
   pr_int * recv_inds = malloc( rdispls[npes] * sizeof( *recv_inds ) );
   double * recv_vals = malloc( rdispls[npes] * sizeof( *recv_vals ) );
+
+  /* Communication patter is static, so indices can be sent in advance */
+  MPI_Alltoallv( accum->send_ind, sendcounts, sdispls, pr_mpi_int, recv_inds, recvcounts, rdispls, pr_mpi_int, MPI_COMM_WORLD );
 
   /* Initialize pageranks to be a probability distribution. */
   double * PR_odd = malloc(nvtxs * sizeof(*PR_odd));
@@ -153,6 +156,11 @@ double * pagerank(
   //double * PR_accum = malloc(nvtxs * sizeof(*PR));
   for(int i=0; i < max_iterations; ++i) {
 
+    int * accum_ind = malloc( npes * sizeof(*accum_ind) );
+    for (int i = 0; i<npes; i++) {
+      accum_ind[i] = accum->bdry[i];
+    }
+
     if ( i%2 == 0 ) {
       PR_new = PR_even;
       PR_old = PR_odd;
@@ -162,7 +170,7 @@ double * pagerank(
       PR_old = PR_even;
     }
 
-    pr_accum_zero_vals(accum);
+    //pr_accum_zero_vals(accum);
 
     double accum_start = MPI_Wtime();
 
@@ -172,7 +180,11 @@ double * pagerank(
       double const pushing_val = PR_old[v] / num_links;
 
       for(pr_int e=xadj[v]; e < xadj[v+1]; ++e) {
-        pr_accum_add_val(accum, pushing_val, nbrs[e]);
+        //pr_accum_add_val(accum, pushing_val, nbrs[e]);
+        int ind = nbrs[e] / ideal_vtxs;
+        //accum->send_ind[ accum_ind[ind] ] = nbrs[e];
+        accum->vals[ accum_ind[ind] ] = pushing_val;
+        accum_ind[ind]++;
       }
     }
 
@@ -184,7 +196,7 @@ double * pagerank(
     double all_start = MPI_Wtime();
 
     /* Communicate values */
-    MPI_Alltoallv( accum->send_ind, sendcounts, sdispls, pr_mpi_int, recv_inds, recvcounts, rdispls, pr_mpi_int, MPI_COMM_WORLD );
+    //MPI_Alltoallv( accum->send_ind, sendcounts, sdispls, pr_mpi_int, recv_inds, recvcounts, rdispls, pr_mpi_int, MPI_COMM_WORLD );
     MPI_Alltoallv( accum->vals, sendcounts, sdispls, MPI_DOUBLE, recv_vals, recvcounts, rdispls, pr_mpi_int, MPI_COMM_WORLD );
 
     double all_end = MPI_Wtime();
@@ -221,6 +233,8 @@ double * pagerank(
 
     global_norm_changed = sqrt(global_norm_changed);
 
+    free(accum_ind);
+
     if(i > 1 && global_norm_changed < tol) {
       if (pid == 0) {
         double end = MPI_Wtime();
@@ -231,6 +245,12 @@ double * pagerank(
   }
 
   pr_accum_free(accum);
+  free(recv_inds);
+  free(recv_vals);
+  free(sendcounts);
+  free(sdispls);
+  free(recvcounts);
+  free(rdispls);
 
   return PR_new;
 }
@@ -249,7 +269,7 @@ void CreateCommArrays(
   MPI_Comm_size( MPI_COMM_WORLD, &npes);
   MPI_Comm_rank( MPI_COMM_WORLD, &pid);
 
-  int ideal_vtxs = (int) ceil( ((double) graph->tvtxs) / npes );
+  //int ideal_vtxs = (int) ceil( ((double) graph->tvtxs) / npes );
 
   *sendcounts = malloc( npes * sizeof(int) );
   *sdispls = malloc( npes * sizeof(int) );
@@ -258,6 +278,7 @@ void CreateCommArrays(
 
   *(sdispls[0]+0) = 0; /* First process's values are stored at beginning of accumulator */
 
+  /*
   int p_curr = 0;
   int count = 0;
   for (pr_int v = 0; v < accum->nvals; v++)
@@ -270,10 +291,16 @@ void CreateCommArrays(
     }
     count++;
   }
-  for (int i = p_curr; i<npes; i++) {  /* Fill in rest of sendcounts */
+  for (int i = p_curr; i<npes; i++) {  // Fill in rest of sendcounts
     *(sendcounts[0]+i) = count;
     *(sdispls[0]+i+1) = *(sdispls[0]+i) + count;
     count = 0;
+  }
+  */
+
+  for (int i = 0; i < npes; i++) {
+    *(sendcounts[0]+i) = accum->bdry[i+1] - accum->bdry[i];
+    *(sdispls[0]+i) = accum->bdry[i];
   }
 
   MPI_Alltoall( *sendcounts, 1, MPI_INT, *recvcounts, 1, MPI_INT, MPI_COMM_WORLD );
@@ -321,6 +348,8 @@ void WriteOutput(
     }
 
     fclose(fout);
+
+    free(PR_local);
   }
   else {
     MPI_Send( PR, graph->nvtxs, MPI_DOUBLE, 0, 0, MPI_COMM_WORLD );

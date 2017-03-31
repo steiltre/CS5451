@@ -19,6 +19,9 @@ typedef struct
   /** Indices of vertices to send values to */
   pr_int * send_ind;
 
+  /** Partitions sent to each process */
+  pr_int * bdry;
+
   /** Values to send to vertices. */
   double * vals;
 } pr_accum;
@@ -60,7 +63,8 @@ void pr_accum_zero_vals(
  * @param graph Graph to get sparsity from
  */
 pr_accum * pr_accum_build(
-    pr_graph const * const graph);
+    pr_graph const * const graph,
+    const int npes);
 
 /**
  * @brief Sort send_ind and remove redundant vertices

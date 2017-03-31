@@ -1,5 +1,6 @@
 #include <stdlib.h>
 #include <stdio.h>
+#include <math.h>
 
 #include "pr_accum.h"
 #include "pr_utils.h"
@@ -38,19 +39,53 @@ void pr_accum_zero_vals(
 }
 
 pr_accum *  pr_accum_build(
-    pr_graph const * const graph)
+    pr_graph const * const graph,
+    const int npes)
 {
   pr_accum * accum = malloc( sizeof(pr_accum) );
-  accum->nvals = 0;
-  accum->send_ind = malloc( graph->nedges * sizeof(pr_int) );
-  accum->vals = malloc( graph->nedges * sizeof(pr_int) );
+  accum->nvals = graph->nedges;
+  accum->send_ind = malloc( graph->nedges * sizeof(*accum->send_ind) );
+  accum->vals = malloc( graph->nedges * sizeof(*accum->vals) );
+  accum->bdry = malloc( (npes+1) * sizeof(*accum->bdry) );
+
+  int * accum_ind = malloc( npes * sizeof(*accum_ind) );
+
+  //pr_accum_make_bdry(accum, graph);
 
   /* Add incident vertex for each edge to accumulator */
+  /*
   for (pr_int e = 0; e < graph->nedges; e++) {
     pr_accum_add_vtx(accum, graph->nbrs[e]);
   }
 
   pr_accum_condense(accum);
+  */
+
+  for (int i=0; i<npes+1; i++) {
+    accum->bdry[i] = 0;
+  }
+
+  int ideal_vtxs = (int) ceil( ((double) graph->tvtxs ) / npes );
+  for (pr_int e = 0; e < graph->nedges; e++) {
+    int ind = (graph->nbrs[e] / ideal_vtxs);
+    accum->bdry[ind+1]++;
+  }
+
+  for (int i = 0; i<npes; i++) {
+    accum->bdry[i+1] += accum->bdry[i];
+  }
+
+  for (int i = 0; i<npes; i++) {
+    accum_ind[i] = accum->bdry[i];
+  }
+
+  for (pr_int e = 0; e < graph->nedges; e++) {
+    int ind = graph->nbrs[e] / ideal_vtxs;
+    accum->send_ind[ accum_ind[ind] ] = graph->nbrs[e];
+    accum_ind[ind]++;
+  }
+
+  free(accum_ind);
 
   return accum;
 }
@@ -102,5 +137,6 @@ void pr_accum_free(
 {
   free(accum->send_ind);
   free(accum->vals);
+  free(accum->bdry);
   free(accum);
 }
