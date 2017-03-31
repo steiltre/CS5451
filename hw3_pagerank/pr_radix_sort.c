@@ -11,7 +11,7 @@ static pr_int const BIT_CHUNK_SIZE = 4;
 /**
  * @brief Width of integers being sorted
  */
-static pr_int const NUM_BITS = 64;
+static pr_int const NUM_BITS = 32;
 
 pr_int GetMask(
         int const num_bits)

@@ -45,24 +45,26 @@ pr_accum *  pr_accum_build(
     const int npes)
 {
   pr_accum * accum = malloc( sizeof(pr_accum) );
-  accum->nvals = graph->nedges;
   accum->send_ind = malloc( graph->nedges * sizeof(*accum->send_ind) );
   accum->vals = malloc( graph->nedges * sizeof(*accum->vals) );
   accum->bdry = malloc( (npes+1) * sizeof(*accum->bdry) );
   accum->send_proc_ind = malloc( graph->nedges * sizeof(*accum->send_proc_ind) );
+  accum->local_nbrs = malloc( graph->nedges * sizeof(*accum->local_nbrs) );
 
   int * accum_ind = malloc( npes * sizeof(*accum_ind) );
 
 #ifdef SORT
+  accum->nvals = 0;
   /* Add incident vertex for each edge to accumulator */
   for (pr_int e = 0; e < graph->nedges; e++) {
     pr_accum_add_vtx(accum, graph->nbrs[e]);
   }
 
   pr_accum_condense(accum);
-#endif
+  pr_accum_local_nbrs(accum, graph);
 
-#ifndef SORT
+#else
+  accum->nvals = graph->nedges;
   for (int i=0; i<npes+1; i++) {
     accum->bdry[i] = 0;
   }
@@ -93,9 +95,9 @@ pr_accum *  pr_accum_build(
     accum->send_ind[ accum_ind[ind] ] = graph->nbrs[e];
     accum_ind[ind]++;
   }
+#endif
 
   free(accum_ind);
-#endif
 
   return accum;
 }
@@ -109,7 +111,8 @@ void pr_accum_condense(
 
   pr_int * new_send_ind;
 
-  radix_sort(accum->send_ind, accum->nvals);
+  //radix_sort(accum->send_ind, accum->nvals);
+  qsort(accum->send_ind, accum->nvals, sizeof(*accum->send_ind), compfunc);
 
   /* Counter for number of unique indices in send_ind */
   int count = 1;
@@ -134,10 +137,36 @@ void pr_accum_condense(
   }
 
   free(accum->send_ind);
+  free(accum->vals);
   accum->send_ind = new_send_ind;
   accum->nvals = count;
   accum->vals = malloc( accum->nvals * sizeof(pr_int) );
 
+}
+
+void pr_accum_local_nbrs(
+    pr_accum * accum,
+    pr_graph const * const graph)
+{
+  /* Create array of pointers from a vertex to accum->vals.
+   * This array is essentially "graph->nbrs" except pointing to accumulator indices rather than other vertices.
+   * This structure can be built before iterations and used throughout the calculation because
+   * the communication pattern remains the same across iterations.
+   */
+
+  int count = 0;
+  for (pr_int v=0; v<graph->nvtxs; ++v) {
+    for (pr_int e=graph->xadj[v]; e < graph->xadj[v+1]; ++e) {
+      pr_int ind = binary_search(accum->send_ind, accum->nvals, graph->nbrs[e]);
+
+      if (ind == -1) {
+        fprintf(stderr, "ERROR: could not locate '%lu' in send_ind array.\n", graph->nbrs[e]);
+      }
+      else {
+        accum->local_nbrs[count++] = ind;
+      }
+    }
+  }
 }
 
 void pr_accum_free(
@@ -146,5 +175,12 @@ void pr_accum_free(
   free(accum->send_ind);
   free(accum->vals);
   free(accum->bdry);
+  free(accum->send_proc_ind);
   free(accum);
+}
+
+int compfunc(
+    const void * a, const void * b)
+{
+  return ( *(int*)a - *(int*)b );
 }

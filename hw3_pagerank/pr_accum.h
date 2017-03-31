@@ -22,6 +22,9 @@ typedef struct
   /** Process IDs associated to each receiving vertex */
   int * send_proc_ind;
 
+  /** Indices to push vertex values to in local accumulator */
+  int * local_nbrs;
+
   /** Partitions sent to each process */
   pr_int * bdry;
 
@@ -78,11 +81,33 @@ void pr_accum_condense(
     pr_accum * accum);
 
 /**
+ * @brief Create local array of vertex neighbors
+ *
+ * @param accum Accumulator
+ * @param graph The graph
+ */
+void pr_accum_local_nbrs(
+    pr_accum * accum,
+    pr_graph const * const graph);
+
+/**
  * @brief Free all memory allocated to accumulator
  *
  * @param accum Accumulator to free
  */
 void pr_accum_free(
     pr_accum * accum);
+
+/**
+ * @brief Comparison function for use in quicksort
+ *
+ * @param a First value
+ * @param b Second value
+ *
+ * @return
+ */
+int compfunc(
+    const void * a,
+    const void * b);
 
 #endif

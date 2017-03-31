@@ -176,17 +176,17 @@ double * pagerank(
       PR_old = PR_even;
     }
 
-    //pr_accum_zero_vals(accum);
-
     double accum_start = MPI_Wtime();
 
 #ifdef SORT
+    pr_accum_zero_vals(accum);
     for (pr_int v=0; v < nvtxs; ++v) {
       double const num_links = (double)(xadj[v+1] - xadj[v]);
       double const pushing_val = PR_old[v] / num_links;
 
       for (pr_int e = xadj[v]; e < xadj[v+1]; ++e) {
-        pr_accum_add_val(accum, pushing_val, nbrs[e]);
+        //pr_accum_add_val(accum, pushing_val, nbrs[e]);
+        accum->vals[ accum->local_nbrs[e] ] += pushing_val;
       }
     }
 #else
@@ -347,6 +347,7 @@ void CreateCommArrays(
     *(sendcounts[0]+i) = accum->bdry[i+1] - accum->bdry[i];
     *(sdispls[0]+i) = accum->bdry[i];
   }
+#endif
 
   MPI_Alltoall( *sendcounts, 1, MPI_INT, *recvcounts, 1, MPI_INT, MPI_COMM_WORLD );
 
@@ -354,7 +355,6 @@ void CreateCommArrays(
   for (int i=1; i<npes+1; i++) {
     *(rdispls[0]+i) = *(rdispls[0]+i-1) + *(recvcounts[0]+i-1);
   }
-#endif
 
 }
 

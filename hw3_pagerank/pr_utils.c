@@ -26,7 +26,7 @@ int GetChunkSize(
     return stop;
 }
 
-pr_int binary_search(
+int binary_search(
     pr_int * arr,
     pr_int arr_size,
     pr_int val)

@@ -41,7 +41,7 @@ int GetChunkSize(
  * @param arr_size Number of values in arr
  * @param val Value to search arr for
  */
-pr_int binary_search(
+int binary_search(
     pr_int * arr,
     pr_int arr_size,
     pr_int val);
