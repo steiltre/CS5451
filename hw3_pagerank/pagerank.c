@@ -9,10 +9,10 @@
 #include "pr_accum.h"
 
 
-//#define PRECOMP_SEND_PROC
+#define PRECOMP_SEND_PROC
 //#define NO_PRECOMP_SEND_PROC
 //#define INT_DIV
-#define SORT
+//#define SORT
 
 /**
 * @brief Compute the PageRank (PR) of a graph.

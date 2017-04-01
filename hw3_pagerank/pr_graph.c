@@ -38,8 +38,8 @@ pr_graph * pr_graph_load(
 
     MPI_Comm_size(MPI_COMM_WORLD, &npes);
 
-    pvtxs = malloc(npes * sizeof(pr_int));
-    pedges = malloc(npes * sizeof(pr_int));
+    pvtxs = malloc(npes * sizeof(*pvtxs));
+    pedges = malloc(npes * sizeof(*pedges));
 
     FILE * fin = fopen(ifname, "r");
     if(!fin) {
@@ -47,7 +47,7 @@ pr_graph * pr_graph_load(
       return NULL;
     }
 
-    pr_graph * send_graph = malloc(sizeof(*graph));
+    pr_graph * send_graph = malloc(sizeof(*send_graph));
 
     /* read nvtxs and nedges */
     fscanf(fin, "%lu", &(graph->tvtxs));
@@ -135,8 +135,8 @@ pr_graph * pr_graph_load(
     for( int i=1; i<npes; i++ ) {
       send_graph->nvtxs = pvtxs[i];
       send_graph->nedges = pedges[i];
-      send_graph->xadj = malloc((graph->nvtxs + 1) * sizeof(*graph->xadj));
-      send_graph->nbrs = malloc(graph->nedges * sizeof(*graph->nbrs));
+      send_graph->xadj = malloc((send_graph->nvtxs + 1) * sizeof(*send_graph->xadj));
+      send_graph->nbrs = malloc(send_graph->nedges * sizeof(*send_graph->nbrs));
 
       /* How many edges we have read. */
       pr_int edge_ptr = 0;

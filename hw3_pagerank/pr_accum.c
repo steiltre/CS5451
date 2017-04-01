@@ -6,7 +6,8 @@
 #include "pr_utils.h"
 #include "pr_radix_sort.h"
 
-#define SORT
+//#define SORT
+#define PRECOMP_SEND_PROC
 
 void pr_accum_add_vtx(
     pr_accum * accum,
@@ -71,15 +72,23 @@ pr_accum *  pr_accum_build(
 
   int ideal_vtxs = (int) ceil( ((double) graph->tvtxs ) / npes );
   int proc_ind = 0;
-  for (pr_int e = 0; e < graph->nedges; e++) {
+  for (pr_int v = 0; v < graph->nvtxs; v++) {
+  for (pr_int e = graph->xadj[v]; e < graph->xadj[v+1]; e++) {
+    int ind = 0;
     while (graph->nbrs[e] >= ideal_vtxs * (proc_ind+1) || graph->nbrs[e] < ideal_vtxs * proc_ind)
     {
       proc_ind = (proc_ind+1)%npes;
+      ++ind;
+      if (ind > 3)
+        printf("%i\n", ind);
     }
     accum->bdry[proc_ind+1]++;
+    //printf("%i\n", accum->bdry[proc_ind+1]);
+    //printf("%i\n", e);
 #ifdef PRECOMP_SEND_PROC
     accum->send_proc_ind[e] = proc_ind;
 #endif
+  }
   }
 
   for (int i = 0; i<npes; i++) {
@@ -154,6 +163,20 @@ void pr_accum_local_nbrs(
    * the communication pattern remains the same across iterations.
    */
 
+  /*
+  for (pr_int e=0; e < graph->nedges; e++) {
+    int ind = binary_search(accum->send_ind, accum->nvals, graph->nbrs[e]);
+
+    if (ind == -1) {
+      fprintf(stderr, "ERROR: could not locate '%lu' in send_ind array.\n", graph->nbrs[e]);
+    }
+    else {
+      accum->local_nbrs[e] = ind;
+    }
+  }
+  */
+
+
   int count = 0;
   for (pr_int v=0; v<graph->nvtxs; ++v) {
     for (pr_int e=graph->xadj[v]; e < graph->xadj[v+1]; ++e) {
@@ -163,8 +186,9 @@ void pr_accum_local_nbrs(
         fprintf(stderr, "ERROR: could not locate '%lu' in send_ind array.\n", graph->nbrs[e]);
       }
       else {
-        accum->local_nbrs[count++] = ind;
+        accum->local_nbrs[count] = ind;
       }
+      count++;
     }
   }
 }

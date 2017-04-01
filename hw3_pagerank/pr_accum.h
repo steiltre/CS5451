@@ -23,7 +23,7 @@ typedef struct
   int * send_proc_ind;
 
   /** Indices to push vertex values to in local accumulator */
-  int * local_nbrs;
+  pr_int * local_nbrs;
 
   /** Partitions sent to each process */
   pr_int * bdry;
