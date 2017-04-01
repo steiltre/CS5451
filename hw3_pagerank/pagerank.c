@@ -9,11 +9,6 @@
 #include "pr_accum.h"
 
 
-#define PRECOMP_SEND_PROC
-//#define NO_PRECOMP_SEND_PROC
-//#define INT_DIV
-//#define SORT
-
 /**
 * @brief Compute the PageRank (PR) of a graph.
 *
@@ -162,11 +157,6 @@ double * pagerank(
   //double * PR_accum = malloc(nvtxs * sizeof(*PR));
   for(int i=0; i < max_iterations; ++i) {
 
-    int * accum_ind = malloc( npes * sizeof(*accum_ind) );
-    for (int i = 0; i<npes; i++) {
-      accum_ind[i] = accum->bdry[i];
-    }
-
     if ( i%2 == 0 ) {
       PR_new = PR_even;
       PR_old = PR_odd;
@@ -178,7 +168,6 @@ double * pagerank(
 
     double accum_start = MPI_Wtime();
 
-#ifdef SORT
     pr_accum_zero_vals(accum);
     for (pr_int v=0; v < nvtxs; ++v) {
       double const num_links = (double)(xadj[v+1] - xadj[v]);
@@ -189,60 +178,20 @@ double * pagerank(
         accum->vals[ accum->local_nbrs[e] ] += pushing_val;
       }
     }
-#else
-    /* Each vertex pushes PR contribution to all outgoing links */
-    for(pr_int v=0; v < nvtxs; ++v) {
-      double const num_links = (double)(xadj[v+1] - xadj[v]);
-      double const pushing_val = PR_old[v] / num_links;
-
-#ifdef INT_DIV
-      int ptr = 0;
-#endif
-#ifdef NO_PRECOMP_SEND_PROC
-      int proc_ind = 0;
-#endif
-      for(pr_int e=xadj[v]; e < xadj[v+1]; ++e) {
-        //pr_accum_add_val(accum, pushing_val, nbrs[e]);
-#ifdef INT_DIV
-        int ind = nbrs[e] / ideal_vtxs;
-        accum->vals[ accum_ind[ind]++ ] = pushing_val;
-#endif
-
-#ifdef NO_PRECOMP_SEND_PROC
-        while (nbrs[e] >= ideal_vtxs * (proc_ind+1) || nbrs[e] < ideal_vtxs * proc_ind)
-        {
-          proc_ind = (proc_ind+1)%npes;
-        }
-
-        accum->vals[ accum_ind[proc_ind] ] = pushing_val;
-        accum_ind[proc_ind]++;
-#endif
-
-#ifdef PRECOMP_SEND_PROC
-        accum->vals[ accum_ind[ accum->send_proc_ind[e] ] ] = pushing_val;
-        accum_ind[ accum->send_proc_ind[e] ]++;
-#endif
-        //accum->vals[ ptr++ ] = pushing_val;
-      }
-    }
-#endif
 
     double accum_end = MPI_Wtime();
     if (pid == 0) {
       accum_total += accum_end - accum_start;
-      //printf("Accum Time: %0.03fs\n", accum_end - accum_start);
     }
 
     double all_start = MPI_Wtime();
 
     /* Communicate values */
-    //MPI_Alltoallv( accum->send_ind, sendcounts, sdispls, pr_mpi_int, recv_inds, recvcounts, rdispls, pr_mpi_int, MPI_COMM_WORLD );
     MPI_Alltoallv( accum->vals, sendcounts, sdispls, MPI_DOUBLE, recv_vals, recvcounts, rdispls, pr_mpi_int, MPI_COMM_WORLD );
 
     double all_end = MPI_Wtime();
     if (pid == 0) {
       all_total += all_end - all_start;
-      //printf("Alltoall Time: %0.03fs\n", all_end - all_start);
     }
 
     double pr_start = MPI_Wtime();
@@ -267,7 +216,6 @@ double * pagerank(
     double pr_end = MPI_Wtime();
     if (pid == 0) {
       pr_total += pr_end - pr_start;
-      //printf("PR Calc: %0.03fs\n", pr_end-pr_start);
     }
 
     /* Communicate global Frobenius norm */
