@@ -36,3 +36,4 @@
 #graph and pagerank files from CSCI 5451 homework 3
 *.graph
 *.pr.txt
+pr_hosts

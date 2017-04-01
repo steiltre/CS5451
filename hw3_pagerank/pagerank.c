@@ -2,17 +2,17 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <math.h>
-#include "mpi.h"
+#include <mpi.h>
 
 #include "pr_graph.h"
 #include "pr_utils.h"
 #include "pr_accum.h"
 
 
-#define PRECOMP_SEND_PROC
+//#define PRECOMP_SEND_PROC
 //#define NO_PRECOMP_SEND_PROC
 //#define INT_DIV
-//#define SORT
+#define SORT
 
 /**
 * @brief Compute the PageRank (PR) of a graph.

@@ -6,8 +6,8 @@
 #include "pr_utils.h"
 #include "pr_radix_sort.h"
 
-//#define SORT
-#define PRECOMP_SEND_PROC
+#define SORT
+//#define PRECOMP_SEND_PROC
 
 void pr_accum_add_vtx(
     pr_accum * accum,
@@ -157,7 +157,6 @@ void pr_accum_local_nbrs(
    * the communication pattern remains the same across iterations.
    */
 
-  /*
   for (pr_int e=0; e < graph->nedges; e++) {
     int ind = binary_search(accum->send_ind, accum->nvals, graph->nbrs[e]);
 
@@ -168,9 +167,8 @@ void pr_accum_local_nbrs(
       accum->local_nbrs[e] = ind;
     }
   }
-  */
 
-
+/*
   int count = 0;
   for (pr_int v=0; v<graph->nvtxs; ++v) {
     for (pr_int e=graph->xadj[v]; e < graph->xadj[v+1]; ++e) {
@@ -185,6 +183,7 @@ void pr_accum_local_nbrs(
       count++;
     }
   }
+  */
 }
 
 void pr_accum_free(
