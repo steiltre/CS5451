@@ -74,17 +74,11 @@ pr_accum *  pr_accum_build(
   int proc_ind = 0;
   for (pr_int v = 0; v < graph->nvtxs; v++) {
   for (pr_int e = graph->xadj[v]; e < graph->xadj[v+1]; e++) {
-    int ind = 0;
     while (graph->nbrs[e] >= ideal_vtxs * (proc_ind+1) || graph->nbrs[e] < ideal_vtxs * proc_ind)
     {
       proc_ind = (proc_ind+1)%npes;
-      ++ind;
-      if (ind > 3)
-        printf("%i\n", ind);
     }
     accum->bdry[proc_ind+1]++;
-    //printf("%i\n", accum->bdry[proc_ind+1]);
-    //printf("%i\n", e);
 #ifdef PRECOMP_SEND_PROC
     accum->send_proc_ind[e] = proc_ind;
 #endif
