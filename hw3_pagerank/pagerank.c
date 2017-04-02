@@ -140,7 +140,6 @@ double * pagerank(
   /* Convergence tolerance. */
   double const tol = 1e-12;
 
-  //double * PR_accum = malloc(nvtxs * sizeof(*PR));
   for(int i=0; i < max_iterations; ++i) {
 
     pr_accum_zero_vals(accum);
@@ -171,7 +170,7 @@ double * pagerank(
       PR[v] = restart;
 
       for (int j=0; j<npes; j++) {
-        if (recv_inds[ next_ind[j] ] == v + pid*ideal_vtxs)
+        if (recv_inds[ next_ind[j] ] == v + pid*ideal_vtxs && next_ind[j] < rdispls[j+1])
         {
           PR[v] += damping * recv_vals[ next_ind[j]++ ];
         }
