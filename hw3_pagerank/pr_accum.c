@@ -4,30 +4,6 @@
 
 #include "pr_accum.h"
 #include "pr_utils.h"
-#include "pr_radix_sort.h"
-
-void pr_accum_add_vtx(
-    pr_accum * accum,
-    pr_int const vtx)
-{
-  accum->send_ind[accum->nvals] = vtx;
-  ++accum->nvals;
-}
-
-void pr_accum_add_val(
-    pr_accum * accum,
-    double const val,
-    pr_int const vtx)
-{
-  pr_int ind = binary_search(accum->send_ind, accum->nvals, vtx);
-
-  if (ind == -1) {
-    fprintf(stderr, "ERROR: could not locate '%lu' in send_ind array.\n", vtx);
-  }
-  else {
-    accum->vals[ind] += val;
-  }
-}
 
 void pr_accum_zero_vals(
     pr_accum * accum)
