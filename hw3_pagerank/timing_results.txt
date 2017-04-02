@@ -1,0 +1,61 @@
+
+A.graph
+number of iterations: 80 average time: 0.144s
+pagerank A.graph 1
+Number of iterations: 80 average time: 0.305s
+
+pagerank A.graph 2
+Number of iterations: 80 average time: 0.151s
+
+pagerank A.graph 4
+Number of iterations: 80 average time: 0.080s
+
+pagerank A.graph 8
+Number of iterations: 80 average time: 0.049s
+
+pagerank A.graph 16
+Number of iterations: 80 average time: 0.031s
+
+pagerank A.graph 32
+Number of iterations: 80 average time: 0.018s
+
+B.graph
+number of iterations: 12 average time: 0.935s
+pagerank B.graph 1
+Number of iterations: 12 average time: 5.233s
+
+pagerank B.graph 2
+Number of iterations: 12 average time: 2.614s
+
+pagerank B.graph 4
+Number of iterations: 12 average time: 1.596s
+
+pagerank B.graph 8
+Number of iterations: 12 average time: 0.841s
+
+pagerank B.graph 16
+Number of iterations: 12 average time: 0.533s
+
+pagerank B.graph 32
+Number of iterations: 12 average time: 1.694s
+
+live-journal.graph
+number of iterations: 100 average time: 0.399s
+pagerank live-journal.graph 1
+Number of iterations: 100 average time: 0.694s
+
+pagerank live-journal.graph 2
+Number of iterations: 100 average time: 0.419s
+
+pagerank live-journal.graph 4
+Number of iterations: 100 average time: 0.288s
+
+pagerank live-journal.graph 8
+Number of iterations: 100 average time: 0.205s
+
+pagerank live-journal.graph 16
+Number of iterations: 100 average time: 0.161s
+
+pagerank live-journal.graph 32
+Number of iterations: 100 average time: 0.338s
+
