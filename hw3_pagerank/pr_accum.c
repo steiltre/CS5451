@@ -4,8 +4,6 @@
 
 #include "pr_accum.h"
 #include "pr_utils.h"
-#include "pr_radix_sort.h"
-
 
 void pr_accum_add_vtx(
     pr_accum * accum,

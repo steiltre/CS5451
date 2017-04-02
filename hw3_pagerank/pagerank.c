@@ -2,7 +2,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <math.h>
-#include "mpi.h"
+#include <mpi.h>
 
 #include "pr_graph.h"
 #include "pr_utils.h"
@@ -105,8 +105,6 @@ double * pagerank(
   pr_int const * const restrict nbrs = graph->nbrs;
 
   int npes, pid;
-  /* Timing variables */
-  double accum_total = 0, all_total = 0, pr_total = 0;
 
   double start = MPI_Wtime();
 
@@ -120,18 +118,8 @@ double * pagerank(
   /* Create accumulator */
   pr_accum * accum = pr_accum_build(graph, npes);
 
-  double accum_stop = MPI_Wtime();
-  if (pid == 0) {
-    printf("Accum: %0.03fs\n", accum_stop - setup_start);
-  }
-
   int * sendcounts, * sdispls, * recvcounts, * rdispls;
   CreateCommArrays(accum, graph, &sendcounts, &sdispls, &recvcounts, &rdispls);
-
-  double setup_stop = MPI_Wtime();
-  if (pid == 0) {
-    printf("Comm Array: %0.03fs\n", setup_stop - accum_stop);
-  }
 
   pr_int * recv_inds = malloc( rdispls[npes] * sizeof( *recv_inds ) );
   double * recv_vals = malloc( rdispls[npes] * sizeof( *recv_vals ) );
@@ -140,11 +128,6 @@ double * pagerank(
   MPI_Alltoallv( accum->send_ind, sendcounts, sdispls, pr_mpi_int, recv_inds, recvcounts, rdispls, pr_mpi_int, MPI_COMM_WORLD );
 
   /* Initialize pageranks to be a probability distribution. */
-  /*
-  double * PR_odd = malloc(nvtxs * sizeof(*PR_odd));
-  double * PR_even = malloc(nvtxs * sizeof(*PR_even));
-  double * PR_old, * PR_new;
-  */
   double * PR = malloc(nvtxs * sizeof(*PR));
   for(pr_int v=0; v < nvtxs; ++v) {
     PR[v] = 1. / (double) tvtxs;
@@ -160,46 +143,18 @@ double * pagerank(
   //double * PR_accum = malloc(nvtxs * sizeof(*PR));
   for(int i=0; i < max_iterations; ++i) {
 
-    /*
-    if ( i%2 == 0 ) {
-      PR_new = PR_even;
-      PR_old = PR_odd;
-    }
-    else {
-      PR_new = PR_odd;
-      PR_old = PR_even;
-    }
-    */
-
-    double accum_start = MPI_Wtime();
-
     pr_accum_zero_vals(accum);
     for (pr_int v=0; v < nvtxs; ++v) {
       double const num_links = (double)(xadj[v+1] - xadj[v]);
       double const pushing_val = PR[v] / num_links;
 
       for (pr_int e = xadj[v]; e < xadj[v+1]; ++e) {
-        //pr_accum_add_val(accum, pushing_val, nbrs[e]);
         accum->vals[ accum->local_nbrs[e] ] += pushing_val;
       }
     }
 
-    double accum_end = MPI_Wtime();
-    if (pid == 0) {
-      accum_total += accum_end - accum_start;
-    }
-
-    double all_start = MPI_Wtime();
-
     /* Communicate values */
     MPI_Alltoallv( accum->vals, sendcounts, sdispls, MPI_DOUBLE, recv_vals, recvcounts, rdispls, pr_mpi_int, MPI_COMM_WORLD );
-
-    double all_end = MPI_Wtime();
-    if (pid == 0) {
-      all_total += all_end - all_start;
-    }
-
-    double pr_start = MPI_Wtime();
 
     /* Initialize new PR values */
     double norm_changed = 0.;
@@ -226,11 +181,6 @@ double * pagerank(
 
     free(next_ind);
 
-    double pr_end = MPI_Wtime();
-    if (pid == 0) {
-      pr_total += pr_end - pr_start;
-    }
-
     /* Communicate global Frobenius norm */
     MPI_Allreduce( &norm_changed, &global_norm_changed, 1, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD );
 
@@ -240,9 +190,6 @@ double * pagerank(
       if (pid == 0) {
         double end = MPI_Wtime();
         printf("Number of iterations: %i average time: %0.03fs\n", i+1, (end-start)/(i+1));
-        printf("Average accum: %0.03fs\n", accum_total/(i+1));
-        printf("Average Alltoallv: %0.03fs\n", all_total/(i+1));
-        printf("Average PR: %0.03fs\n", pr_total/(i+1));
       }
       break;
     }

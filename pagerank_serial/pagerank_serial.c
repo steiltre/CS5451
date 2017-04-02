@@ -126,8 +126,6 @@ double * pagerank(
   double * PR_accum = malloc(nvtxs * sizeof(*PR));
   for(int i=0; i < max_iterations; ++i) {
 
-    double accum_start = monotonic_seconds();
-
     for(pr_int v=0; v < nvtxs; ++v) {
       PR_accum[v] = 0.;
     }
@@ -142,9 +140,6 @@ double * pagerank(
       }
     }
 
-    double pr_start = monotonic_seconds();
-    printf("Accum: %0.03fs\n", pr_start-accum_start);
-
     /* Finalize new PR values */
     double norm_changed = 0.;
     for(pr_int v=0; v < nvtxs; ++v) {
@@ -154,9 +149,6 @@ double * pagerank(
       norm_changed += (PR[v] - old) * (PR[v] - old);
     }
     norm_changed = sqrt(norm_changed);
-
-    double pr_end = monotonic_seconds();
-    printf("PR Calc: %0.03fs\n", pr_end - pr_start);
 
     if( (i > 1 && norm_changed < tol) || i == max_iterations - 1) {
 

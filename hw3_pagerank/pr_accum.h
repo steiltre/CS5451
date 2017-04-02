@@ -2,7 +2,7 @@
 #define PAGERANK_ACCUMULATOR_H
 
 #include <stdint.h>
-#include "mpi.h"
+#include <mpi.h>
 
 #include "pr_graph.h"
 
