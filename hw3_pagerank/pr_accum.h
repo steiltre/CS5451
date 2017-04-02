@@ -22,9 +22,6 @@ typedef struct
   /** Process IDs associated to each receiving vertex */
   int * send_proc_ind;
 
-  /** Indices to push vertex values to in local accumulator */
-  pr_int * local_nbrs;
-
   /** Partitions sent to each process */
   pr_int * bdry;
 
@@ -88,7 +85,8 @@ void pr_accum_condense(
  */
 void pr_accum_local_nbrs(
     pr_accum * accum,
-    pr_graph const * const graph);
+    pr_graph const * const graph,
+    int npes);
 
 /**
  * @brief Free all memory allocated to accumulator
