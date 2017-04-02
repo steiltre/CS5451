@@ -140,11 +140,14 @@ double * pagerank(
   MPI_Alltoallv( accum->send_ind, sendcounts, sdispls, pr_mpi_int, recv_inds, recvcounts, rdispls, pr_mpi_int, MPI_COMM_WORLD );
 
   /* Initialize pageranks to be a probability distribution. */
+  /*
   double * PR_odd = malloc(nvtxs * sizeof(*PR_odd));
   double * PR_even = malloc(nvtxs * sizeof(*PR_even));
   double * PR_old, * PR_new;
+  */
+  double * PR = malloc(nvtxs * sizeof(*PR));
   for(pr_int v=0; v < nvtxs; ++v) {
-    PR_odd[v] = 1. / (double) tvtxs;
+    PR[v] = 1. / (double) tvtxs;
   }
 
   /* Probability of restart */
@@ -157,6 +160,7 @@ double * pagerank(
   //double * PR_accum = malloc(nvtxs * sizeof(*PR));
   for(int i=0; i < max_iterations; ++i) {
 
+    /*
     if ( i%2 == 0 ) {
       PR_new = PR_even;
       PR_old = PR_odd;
@@ -165,13 +169,14 @@ double * pagerank(
       PR_new = PR_odd;
       PR_old = PR_even;
     }
+    */
 
     double accum_start = MPI_Wtime();
 
     pr_accum_zero_vals(accum);
     for (pr_int v=0; v < nvtxs; ++v) {
       double const num_links = (double)(xadj[v+1] - xadj[v]);
-      double const pushing_val = PR_old[v] / num_links;
+      double const pushing_val = PR[v] / num_links;
 
       for (pr_int e = xadj[v]; e < xadj[v+1]; ++e) {
         //pr_accum_add_val(accum, pushing_val, nbrs[e]);
@@ -199,19 +204,27 @@ double * pagerank(
     /* Initialize new PR values */
     double norm_changed = 0.;
     double global_norm_changed = 0;
-    for(pr_int v=0; v < nvtxs; ++v) {
-      PR_new[v] = restart; // + (damping * PR_accum[v]);
+
+    int * next_ind = malloc( npes * sizeof(*next_ind) );
+
+    for (int j=0; j<npes; j++) {
+      next_ind[j] = rdispls[j];
     }
 
-    /* Add contributions to new pagerank */
-    for (pr_int j=0; j < rdispls[npes]; ++j) {
-      PR_new[ recv_inds[j] - pid*ideal_vtxs ] += damping * recv_vals[j];
+    for (pr_int v=0; v<nvtxs; ++v) {
+      double old = PR[v];
+      PR[v] = restart;
+
+      for (int j=0; j<npes; j++) {
+        if (recv_inds[ next_ind[j] ] == v + pid*ideal_vtxs)
+        {
+          PR[v] += damping * recv_vals[ next_ind[j]++ ];
+        }
+      }
+      norm_changed += (PR[v] - old) * (PR[v] - old);
     }
 
-    /* Calculate local contribution to Frobenius norm */
-    for (pr_int v=0; v < nvtxs; ++v) {
-      norm_changed += (PR_new[v] - PR_old[v]) * (PR_new[v] - PR_old[v]);
-    }
+    free(next_ind);
 
     double pr_end = MPI_Wtime();
     if (pid == 0) {
@@ -222,8 +235,6 @@ double * pagerank(
     MPI_Allreduce( &norm_changed, &global_norm_changed, 1, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD );
 
     global_norm_changed = sqrt(global_norm_changed);
-
-    free(accum_ind);
 
     if( (i > 1 && global_norm_changed < tol) || i == max_iterations - 1 ) {
       if (pid == 0) {
@@ -245,7 +256,7 @@ double * pagerank(
   free(recvcounts);
   free(rdispls);
 
-  return PR_new;
+  return PR;
 }
 
 
@@ -271,7 +282,6 @@ void CreateCommArrays(
 
   *(sdispls[0]+0) = 0; /* First process's values are stored at beginning of accumulator */
 
-#ifdef SORT
   int p_curr = 0;
   int count = 0;
   pr_int ideal_vtxs = (int) ceil( ((double) graph->tvtxs) / npes );
@@ -290,12 +300,6 @@ void CreateCommArrays(
     *(sdispls[0]+i+1) = *(sdispls[0]+i) + count;
     count = 0;
   }
-#else
-  for (int i = 0; i < npes; i++) {
-    *(sendcounts[0]+i) = accum->bdry[i+1] - accum->bdry[i];
-    *(sdispls[0]+i) = accum->bdry[i];
-  }
-#endif
 
   MPI_Alltoall( *sendcounts, 1, MPI_INT, *recvcounts, 1, MPI_INT, MPI_COMM_WORLD );
 

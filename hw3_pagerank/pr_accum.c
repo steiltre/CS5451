@@ -46,7 +46,6 @@ pr_accum *  pr_accum_build(
   pr_accum * accum = malloc( sizeof(pr_accum) );
   accum->send_ind = malloc( graph->nedges * sizeof(*accum->send_ind) );
   accum->vals = malloc( graph->nedges * sizeof(*accum->vals) );
-  accum->bdry = malloc( (npes+1) * sizeof(*accum->bdry) );
   accum->send_proc_ind = malloc( graph->nedges * sizeof(*accum->send_proc_ind) );
   accum->local_nbrs = malloc( graph->nedges * sizeof(*accum->local_nbrs) );
 
@@ -114,7 +113,6 @@ void pr_accum_local_nbrs(
    * the communication pattern remains the same across iterations.
    */
 
-  /*
   for (pr_int e=0; e < graph->nedges; e++) {
     int ind = binary_search(accum->send_ind, accum->nvals, graph->nbrs[e]);
 
@@ -125,23 +123,6 @@ void pr_accum_local_nbrs(
       accum->local_nbrs[e] = ind;
     }
   }
-  */
-
-
-  int count = 0;
-  for (pr_int v=0; v<graph->nvtxs; ++v) {
-    for (pr_int e=graph->xadj[v]; e < graph->xadj[v+1]; ++e) {
-      pr_int ind = binary_search(accum->send_ind, accum->nvals, graph->nbrs[e]);
-
-      if (ind == -1) {
-        fprintf(stderr, "ERROR: could not locate '%lu' in send_ind array.\n", graph->nbrs[e]);
-      }
-      else {
-        accum->local_nbrs[count] = ind;
-      }
-      count++;
-    }
-  }
 }
 
 void pr_accum_free(
@@ -149,7 +130,6 @@ void pr_accum_free(
 {
   free(accum->send_ind);
   free(accum->vals);
-  free(accum->bdry);
   free(accum->send_proc_ind);
   free(accum);
 }

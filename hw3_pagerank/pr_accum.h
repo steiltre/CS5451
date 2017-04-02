@@ -26,7 +26,7 @@ typedef struct
   pr_int * local_nbrs;
 
   /** Partitions sent to each process */
-  pr_int * bdry;
+  //pr_int * bdry;
 
   /** Values to send to vertices. */
   double * vals;
