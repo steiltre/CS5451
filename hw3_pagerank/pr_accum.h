@@ -22,9 +22,6 @@ typedef struct
   /** Process IDs associated to each receiving vertex */
   int * send_proc_ind;
 
-  /** Indices to push vertex values to in local accumulator */
-  pr_int * local_nbrs;
-
   /** Partitions sent to each process */
   //pr_int * bdry;
 
@@ -32,28 +29,6 @@ typedef struct
   double * vals;
 } pr_accum;
 
-
-/**
- * @brief Add an index to the array of indices
- *
- * @param accum Accumulator to add index to
- * @param vtx The index to be added
- */
-void pr_accum_add_vtx(
-    pr_accum * accum,
-    pr_int const vtx);
-
-/**
- * @brief Add a value to the array of values
- *
- * @param accum Accumulator to add value to
- * @param val Value to add
- * @param vtx Vertex ID corresponding to val
- */
-void pr_accum_add_val(
-    pr_accum * accum,
-    double const val,
-    pr_int const vtx);
 
 /**
  * @brief Set values to 0
@@ -88,7 +63,8 @@ void pr_accum_condense(
  */
 void pr_accum_local_nbrs(
     pr_accum * accum,
-    pr_graph const * const graph);
+    pr_graph const * const graph,
+    int npes);
 
 /**
  * @brief Free all memory allocated to accumulator

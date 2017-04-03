@@ -102,7 +102,6 @@ double * pagerank(
   pr_int const nvtxs = graph->nvtxs;
   pr_int const tvtxs = graph->tvtxs;
   pr_int const * const restrict xadj = graph->xadj;
-  pr_int const * const restrict nbrs = graph->nbrs;
 
   int npes, pid;
 
@@ -112,8 +111,6 @@ double * pagerank(
   MPI_Comm_rank( MPI_COMM_WORLD, &pid );
 
   int ideal_vtxs = (int) ceil( ((double) tvtxs) / npes );
-
-  double setup_start = MPI_Wtime();
 
   /* Create accumulator */
   pr_accum * accum = pr_accum_build(graph, npes);
@@ -133,6 +130,8 @@ double * pagerank(
     PR[v] = 1. / (double) tvtxs;
   }
 
+  PR_old = PR_odd;
+
   /* Probability of restart */
   double const restart = (1 - damping) / (double) tvtxs;
 
@@ -142,6 +141,7 @@ double * pagerank(
 
   for(int i=0; i < max_iterations; ++i) {
 
+<<<<<<< HEAD
     pr_accum_zero_vals(accum);
     for (pr_int v=0; v < nvtxs; ++v) {
       double const num_links = (double)(xadj[v+1] - xadj[v]);
@@ -149,6 +149,32 @@ double * pagerank(
 
       for (pr_int e = xadj[v]; e < xadj[v+1]; ++e) {
         accum->vals[ accum->local_nbrs[e] ] += pushing_val;
+=======
+    int * accum_ind = malloc( npes * sizeof(*accum_ind) );
+    for (int i = 0; i<npes; i++) {
+      accum_ind[i] = accum->bdry[i];
+    }
+
+    if ( i%2 == 0 ) {
+      PR_new = PR_even;
+      PR_old = PR_odd;
+    }
+    else {
+      PR_new = PR_odd;
+      PR_old = PR_even;
+    }
+
+    /* Each vertex pushes PR contribution to all outgoing links */
+    for(pr_int v=0; v < nvtxs; ++v) {
+      double const num_links = (double)(xadj[v+1] - xadj[v]);
+      double const pushing_val = PR_old[v] / num_links;
+
+      for(pr_int e=xadj[v]; e < xadj[v+1]; ++e) {
+        //pr_accum_add_val(accum, pushing_val, nbrs[e]);
+
+        accum->vals[ accum_ind[ accum->send_proc_ind[e] ] ] = pushing_val;
+        accum_ind[ accum->send_proc_ind[e] ]++;
+>>>>>>> origin/pagerank_precomp
       }
     }
 
@@ -165,6 +191,7 @@ double * pagerank(
       next_ind[j] = rdispls[j];
     }
 
+<<<<<<< HEAD
     for (pr_int v=0; v<nvtxs; ++v) {
       double old = PR[v];
       PR[v] = restart;
@@ -180,6 +207,8 @@ double * pagerank(
 
     free(next_ind);
 
+=======
+>>>>>>> origin/pagerank_precomp
     /* Communicate global Frobenius norm */
     MPI_Allreduce( &norm_changed, &global_norm_changed, 1, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD );
 
@@ -202,7 +231,14 @@ double * pagerank(
   free(recvcounts);
   free(rdispls);
 
+<<<<<<< HEAD
   return PR;
+=======
+  if (max_iterations == 0)
+    return PR_old;
+  else
+    return PR_new;
+>>>>>>> origin/pagerank_precomp
 }
 
 
@@ -219,7 +255,6 @@ void CreateCommArrays(
   MPI_Comm_size( MPI_COMM_WORLD, &npes);
   MPI_Comm_rank( MPI_COMM_WORLD, &pid);
 
-  //int ideal_vtxs = (int) ceil( ((double) graph->tvtxs) / npes );
 
   *sendcounts = malloc( npes * sizeof(int) );
   *sdispls = malloc( npes * sizeof(int) );
@@ -228,6 +263,7 @@ void CreateCommArrays(
 
   *(sdispls[0]+0) = 0; /* First process's values are stored at beginning of accumulator */
 
+<<<<<<< HEAD
   int p_curr = 0;
   int count = 0;
   pr_int ideal_vtxs = (int) ceil( ((double) graph->tvtxs) / npes );
@@ -245,6 +281,11 @@ void CreateCommArrays(
     *(sendcounts[0]+i) = count;
     *(sdispls[0]+i+1) = *(sdispls[0]+i) + count;
     count = 0;
+=======
+  for (int i = 0; i < npes; i++) {
+    *(sendcounts[0]+i) = accum->bdry[i+1] - accum->bdry[i];
+    *(sdispls[0]+i) = accum->bdry[i];
+>>>>>>> origin/pagerank_precomp
   }
 
   MPI_Alltoall( *sendcounts, 1, MPI_INT, *recvcounts, 1, MPI_INT, MPI_COMM_WORLD );

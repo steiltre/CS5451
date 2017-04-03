@@ -1,0 +1,76 @@
+
+rs_openmp 1M 1
+Sort Time: 0.1473s
+
+rs_openmp 1M 2
+Sort Time: 0.1145s
+
+rs_openmp 1M 4
+Sort Time: 0.0651s
+
+rs_openmp 1M 8
+Sort Time: 0.0362s
+
+rs_openmp 1M 16
+Sort Time: 0.0297s
+
+rs_openmp 10M 1
+Sort Time: 1.5117s
+
+rs_openmp 10M 2
+Sort Time: 0.8188s
+
+rs_openmp 10M 4
+Sort Time: 0.4541s
+
+rs_openmp 10M 8
+Sort Time: 0.2976s
+
+rs_openmp 10M 16
+Sort Time: 0.2228s
+
+rs_openmp 100M 1
+Sort Time: 22.2360s
+
+rs_openmp 100M 2
+Sort Time: 11.2505s
+
+rs_openmp 100M 4
+Sort Time: 5.9501s
+
+rs_openmp 100M 8
+Sort Time: 3.1818s
+
+rs_openmp 100M 16
+Sort Time: 1.9914s
+
+rs_mpi 1M 1
+Sort Time: 0.1246s
+rs_mpi 1M 2
+Sort Time: 0.0659s
+rs_mpi 1M 4
+Sort Time: 0.0376s
+rs_mpi 1M 8
+Sort Time: 0.0248s
+rs_mpi 1M 16
+Sort Time: 0.0217s
+rs_mpi 10M 1
+Sort Time: 1.4386s
+rs_mpi 10M 2
+Sort Time: 0.7119s
+rs_mpi 10M 4
+Sort Time: 0.3797s
+rs_mpi 10M 8
+Sort Time: 0.2233s
+rs_mpi 10M 16
+Sort Time: 0.1419s
+rs_mpi 100M 1
+Sort Time: 20.6682s
+rs_mpi 100M 2
+Sort Time: 11.2019s
+rs_mpi 100M 4
+Sort Time: 6.0500s
+rs_mpi 100M 8
+Sort Time: 3.7221s
+rs_mpi 100M 16
+Sort Time: 2.0293s
