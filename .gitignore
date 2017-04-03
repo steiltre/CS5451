@@ -39,3 +39,6 @@
 
 # hosts files for MPI
 *_hosts
+
+# include timing results
+!*timing_results.txt
