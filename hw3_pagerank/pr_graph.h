@@ -6,7 +6,12 @@
 #include <mpi.h>
 
 typedef uint64_t pr_int;
+<<<<<<< HEAD
 #define pr_mpi_int MPI_UNSIGNED_LONG_LONG
+=======
+//typedef MPI_INT pr_mpi_int;
+#define pr_mpi_int MPI_DOUBLE
+>>>>>>> origin
 
 
 /**

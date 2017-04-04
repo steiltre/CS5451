@@ -36,9 +36,13 @@
 #graph and pagerank files from CSCI 5451 homework 3
 *.graph
 *.pr.txt
+<<<<<<< HEAD
 
 # hosts files for MPI
 *_hosts
 
 # include timing results
 !*timing_results.txt
+=======
+pr_hosts
+>>>>>>> origin

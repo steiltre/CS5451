@@ -4,6 +4,36 @@
 
 #include "pr_accum.h"
 #include "pr_utils.h"
+<<<<<<< HEAD
+=======
+#include "pr_radix_sort.h"
+
+#define SORT
+//#define PRECOMP_SEND_PROC
+
+void pr_accum_add_vtx(
+    pr_accum * accum,
+    pr_int const vtx)
+{
+  accum->send_ind[accum->nvals] = vtx;
+  ++accum->nvals;
+}
+
+void pr_accum_add_val(
+    pr_accum * accum,
+    double const val,
+    pr_int const vtx)
+{
+  pr_int ind = binary_search(accum->send_ind, accum->nvals, vtx);
+
+  if (ind == -1) {
+    fprintf(stderr, "ERROR: could not locate '%lu' in send_ind array.\n", vtx);
+  }
+  else {
+    accum->vals[ind] += val;
+  }
+}
+>>>>>>> origin
 
 void pr_accum_zero_vals(
     pr_accum * accum)
@@ -61,6 +91,90 @@ pr_accum *  pr_accum_build(
   return accum;
 }
 
+<<<<<<< HEAD
+=======
+void pr_accum_condense(
+    pr_accum * accum)
+{
+
+  if ( accum->nvals == 0 )
+    return;  /* Accumulator is already condensed if it is empty */
+
+  pr_int * new_send_ind;
+
+  //radix_sort(accum->send_ind, accum->nvals);
+  qsort(accum->send_ind, accum->nvals, sizeof(*accum->send_ind), compfunc);
+
+  /* Counter for number of unique indices in send_ind */
+  int count = 1;
+
+  for (pr_int i=1; i<accum->nvals; i++) {
+    if (accum->send_ind[i] != accum->send_ind[i-1])
+      ++count;
+  }
+
+  new_send_ind = malloc( count * sizeof(pr_int) );
+
+  new_send_ind[0] = accum->send_ind[0];
+
+  count = 1;
+
+  /* Create new send_ind array with only unique vertex IDs */
+  for (pr_int i=1; i<accum->nvals; i++) {
+    if (accum->send_ind[i] != accum->send_ind[i-1]) {
+      new_send_ind[count] = accum->send_ind[i];
+      count++;
+    }
+  }
+
+  free(accum->send_ind);
+  free(accum->vals);
+  accum->send_ind = new_send_ind;
+  accum->nvals = count;
+  accum->vals = malloc( accum->nvals * sizeof(pr_int) );
+
+}
+
+void pr_accum_local_nbrs(
+    pr_accum * accum,
+    pr_graph const * const graph)
+{
+  /* Create array of pointers from a vertex to accum->vals.
+   * This array is essentially "graph->nbrs" except pointing to accumulator indices rather than other vertices.
+   * This structure can be built before iterations and used throughout the calculation because
+   * the communication pattern remains the same across iterations.
+   */
+
+  for (pr_int e=0; e < graph->nedges; e++) {
+    int ind = binary_search(accum->send_ind, accum->nvals, graph->nbrs[e]);
+
+    if (ind == -1) {
+      fprintf(stderr, "ERROR: could not locate '%lu' in send_ind array.\n", graph->nbrs[e]);
+    }
+    else {
+      accum->local_nbrs[e] = ind;
+    }
+  }
+
+/*
+  int count = 0;
+  for (pr_int v=0; v<graph->nvtxs; ++v) {
+    for (pr_int e=graph->xadj[v]; e < graph->xadj[v+1]; ++e) {
+      pr_int ind = binary_search(accum->send_ind, accum->nvals, graph->nbrs[e]);
+
+      if (ind == -1) {
+        fprintf(stderr, "ERROR: could not locate '%lu' in send_ind array.\n", graph->nbrs[e]);
+      }
+      else {
+        accum->local_nbrs[count] = ind;
+      }
+      count++;
+    }
+  }
+  */
+}
+
+>>>>>>> origin
 void pr_accum_free(
     pr_accum *accum)
 {
