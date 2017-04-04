@@ -106,14 +106,11 @@ double * pagerank(
 
   int npes, pid;
 
-  double start = MPI_Wtime();
-
   MPI_Comm_size( MPI_COMM_WORLD, &npes );
   MPI_Comm_rank( MPI_COMM_WORLD, &pid );
 
   int ideal_vtxs = (int) ceil( ((double) tvtxs) / npes );
 
-  double setup_start = MPI_Wtime();
 
   /* Create accumulator */
   pr_accum * accum = pr_accum_build(graph, npes);
@@ -136,9 +133,10 @@ double * pagerank(
   /* Probability of restart */
   double const restart = (1 - damping) / (double) tvtxs;
 
-
   /* Convergence tolerance. */
   double const tol = 1e-12;
+
+  double start = MPI_Wtime();
 
   for(int i=0; i < max_iterations; ++i) {
 

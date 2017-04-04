@@ -108,8 +108,6 @@ double * pagerank(
   pr_int const * const restrict xadj = graph->xadj;
   pr_int const * const restrict nbrs = graph->nbrs;
 
-  double start = monotonic_seconds();
-
   /* Initialize pageranks to be a probability distribution. */
   double * PR = malloc(nvtxs * sizeof(*PR));
   for(pr_int v=0; v < nvtxs; ++v) {
@@ -124,6 +122,9 @@ double * pagerank(
   double const tol = 1e-12;
 
   double * PR_accum = malloc(nvtxs * sizeof(*PR));
+
+  double start = monotonic_seconds();
+
   for(int i=0; i < max_iterations; ++i) {
 
     for(pr_int v=0; v < nvtxs; ++v) {

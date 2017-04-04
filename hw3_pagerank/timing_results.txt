@@ -1,61 +1,61 @@
 
 A.graph
-number of iterations: 80 average time: 0.144s
+number of iterations: 80 average time: 0.147s
 pagerank A.graph 1
-Number of iterations: 80 average time: 0.305s
+Number of iterations: 80 average time: 0.180s
 
 pagerank A.graph 2
-Number of iterations: 80 average time: 0.151s
+Number of iterations: 80 average time: 0.091s
 
 pagerank A.graph 4
-Number of iterations: 80 average time: 0.080s
+Number of iterations: 80 average time: 0.050s
 
 pagerank A.graph 8
-Number of iterations: 80 average time: 0.049s
+Number of iterations: 80 average time: 0.029s
 
 pagerank A.graph 16
-Number of iterations: 80 average time: 0.031s
+Number of iterations: 80 average time: 0.020s
 
 pagerank A.graph 32
-Number of iterations: 80 average time: 0.018s
+Number of iterations: 80 average time: 0.014s
 
 B.graph
-number of iterations: 12 average time: 0.935s
+number of iterations: 12 average time: 0.938s
 pagerank B.graph 1
-Number of iterations: 12 average time: 5.233s
+Number of iterations: 12 average time: 0.939s
 
 pagerank B.graph 2
-Number of iterations: 12 average time: 2.614s
+Number of iterations: 12 average time: 0.489s
 
 pagerank B.graph 4
-Number of iterations: 12 average time: 1.596s
+Number of iterations: 12 average time: 0.346s
 
 pagerank B.graph 8
-Number of iterations: 12 average time: 0.841s
+Number of iterations: 12 average time: 0.250s
 
 pagerank B.graph 16
-Number of iterations: 12 average time: 0.533s
+Number of iterations: 12 average time: 0.255s
 
 pagerank B.graph 32
-Number of iterations: 12 average time: 1.694s
+Number of iterations: 12 average time: 1.462s
 
 live-journal.graph
-number of iterations: 100 average time: 0.399s
+number of iterations: 100 average time: 0.397s
 pagerank live-journal.graph 1
-Number of iterations: 100 average time: 0.694s
+Number of iterations: 100 average time: 0.418s
 
 pagerank live-journal.graph 2
-Number of iterations: 100 average time: 0.419s
+Number of iterations: 100 average time: 0.260s
 
 pagerank live-journal.graph 4
-Number of iterations: 100 average time: 0.288s
+Number of iterations: 100 average time: 0.186s
 
 pagerank live-journal.graph 8
-Number of iterations: 100 average time: 0.205s
+Number of iterations: 100 average time: 0.136s
 
 pagerank live-journal.graph 16
-Number of iterations: 100 average time: 0.161s
+Number of iterations: 100 average time: 0.117s
 
 pagerank live-journal.graph 32
-Number of iterations: 100 average time: 0.338s
+Number of iterations: 100 average time: 0.312s
 
