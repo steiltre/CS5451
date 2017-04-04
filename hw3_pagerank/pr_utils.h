@@ -2,7 +2,7 @@
 #define PAGERANK_UTILS_H
 
 #include <stdint.h>
-#include <mpi.h>
+#include "mpi.h"
 
 typedef uint64_t pr_int;
 
@@ -33,5 +33,17 @@ int GetChunkSize(
     int const chunk_id,
     int const chunk_size,
     int const num_items );
+
+/**
+ * @brief Searches sorted array for value
+ *
+ * @param arr Array to search in
+ * @param arr_size Number of values in arr
+ * @param val Value to search arr for
+ */
+int binary_search(
+    pr_int * arr,
+    pr_int arr_size,
+    pr_int val);
 
 #endif

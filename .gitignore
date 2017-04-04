@@ -37,12 +37,5 @@
 *.graph
 *.pr.txt
 
-<<<<<<< HEAD
 # include timing resutls
-=======
-# hosts files for MPI
-*_hosts
-
-# include timing results
->>>>>>> origin/pagerank_precomp
 !*timing_results.txt

@@ -6,10 +6,6 @@
 #include <mpi.h>
 
 typedef uint64_t pr_int;
-<<<<<<< HEAD
-=======
-//#define pr_mpi_int MPI_UINT64_T
->>>>>>> origin/pagerank_precomp
 #define pr_mpi_int MPI_DOUBLE
 
 

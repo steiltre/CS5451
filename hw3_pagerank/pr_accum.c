@@ -4,7 +4,6 @@
 
 #include "pr_accum.h"
 #include "pr_utils.h"
-<<<<<<< HEAD
 
 void pr_accum_add_vtx(
     pr_accum * accum,
@@ -28,8 +27,6 @@ void pr_accum_add_val(
     accum->vals[ind] += val;
   }
 }
-=======
->>>>>>> origin/pagerank_precomp
 
 void pr_accum_zero_vals(
     pr_accum * accum)
@@ -48,8 +45,8 @@ pr_accum *  pr_accum_build(
   accum->send_ind = malloc( graph->nedges * sizeof(*accum->send_ind) );
   accum->vals = malloc( graph->nedges * sizeof(*accum->vals) );
   accum->send_proc_ind = malloc( graph->nedges * sizeof(*accum->send_proc_ind) );
+  accum->local_nbrs = malloc( graph->nedges * sizeof(*accum->local_nbrs) );
 
-<<<<<<< HEAD
   accum->nvals = 0;
   /* Add incident vertex for each edge to accumulator */
   for (pr_int e = 0; e < graph->nedges; e++) {
@@ -58,46 +55,10 @@ pr_accum *  pr_accum_build(
 
   pr_accum_condense(accum);
   pr_accum_local_nbrs(accum, graph);
-=======
-  int * accum_ind = malloc( npes * sizeof(*accum_ind) );
-
-  accum->nvals = graph->nedges;
-  for (int i=0; i<npes+1; i++) {
-    accum->bdry[i] = 0;
-  }
-
-  int ideal_vtxs = (int) ceil( ((double) graph->tvtxs ) / npes );
-  int proc_ind = 0;
-  for (pr_int v = 0; v < graph->nvtxs; v++) {
-    for (pr_int e = graph->xadj[v]; e < graph->xadj[v+1]; e++) {
-      while (graph->nbrs[e] >= ideal_vtxs * (proc_ind+1) || graph->nbrs[e] < ideal_vtxs * proc_ind)
-      {
-        proc_ind = (proc_ind+1)%npes;
-      }
-      accum->bdry[proc_ind+1]++;
-      accum->send_proc_ind[e] = proc_ind;
-    }
-  }
-
-  for (int i = 0; i<npes; i++) {
-    accum->bdry[i+1] += accum->bdry[i];
-  }
-
-  for (int i = 0; i<npes; i++) {
-    accum_ind[i] = accum->bdry[i];
-  }
-
-  for (pr_int e = 0; e < graph->nedges; e++) {
-    accum->send_ind[ accum_ind[ accum->send_proc_ind[e] ]++ ] = graph->nbrs[e];
-  }
-
-  free(accum_ind);
->>>>>>> origin/pagerank_precomp
 
   return accum;
 }
 
-<<<<<<< HEAD
 void pr_accum_condense(
     pr_accum * accum)
 {
@@ -162,8 +123,6 @@ void pr_accum_local_nbrs(
   }
 }
 
-=======
->>>>>>> origin/pagerank_precomp
 void pr_accum_free(
     pr_accum *accum)
 {
