@@ -63,35 +63,26 @@ necessary communication happens between processes, followed by the updating of P
 In my implementation of parallel Pagerank, each process constructed an accumulator. The accumulator's purpose was to store the values being pushed
 from each vertex in a given process in such a way to be easily communicated to other processes. One observation that speeds up the use of the accumulator is that the communication pattern is determined by the
 graph and does not change from iteration to iteration. Therefore, the structures needed by the accumulator could be precomputed, reducing computation
-time at each iteration. There were two different levels of precomputing that were considered for solutions to this problem. The first level determined
-the number of edges that cross from the given process to all other process's in order to determine where to place pushing values in a large global
-array to ensure they reached the correct process. The second level sorted the entire set of outgoing edges from a given process and eliminated
-redundant edges in order to create a smaller array for storing the pushing values.
+time at each iteration.
 
-In the first precomputing implementation considered, an array was created to store the number of elements the given process needs to push to all other
-processes. During each iteration, this allowed values to be stored in the accumulator by looping over all vertices to determine the value to be
-pushed. For each outgoing edge from the vertex, the number of the receiving vertex is used to determine which process it belongs to, and then the
-pushing value is placed in the next available entry in the portion of the accumulator being sent to the correct process. This allows the minimum
-ordering on the accumulator so as to place all values being pushed to a single process in a contiguous section in memory, but within this section,
-values are not in any convenient order for use by the receiving process and an individual vertex in the receiving process may receive several values
-scattered throughout this array. Along with each value, another array needed to be created in order to store the vertices receiving each value so they
-were used in updating the Pagerank of the correct vertex. Because vertices and edges were traversed in a deterministic manner, this array could be
-precomputed, so the only array updated during each iteration was the array of pushing values. Because of the lack of order on the arrays a given
-process receives, the only option for updating Pagerank values after receiving this array is to loop over the entire
-array.
+To build the communication structures and accumulator, each process scanned its list of edges and added them to a large array. Then, this array was
+sorted, and all repeated entries were removed. This shortened array gave the unique vertices that a process must push values to. Along with this
+array, a set of arrays is constructed using the compressed sparse row format which gives the indices each local vertex must add its values to the
+shortened accumulator array just constructed. This step uses a binary search of the global indices in the shortened array that only contains vertices
+the current process will send values to. Using these arrays,
+each processor determines how many values it would send to every process. These values are shared among all processes using an all-to-all broadcast.
+From these values each process determines how many values it will receive from every process and where to place them in the array it uses for
+receiving values.
 
-In the second precomputing implementation considered, all techniques given above were utilized, and additionally, the array of outgoing edges from a
-given process was presorted and had all redundant receiving vertices removed. This allowed for the size of messages sent between vertices to be
-reduced because when multiple vertices stored locally were pushing to the same edge, the pushed values were combined before communication rather than
-making it the responsibility of the receiving process to combine them. Arrays receiving the pushed values also knew that the values it received were
-ordered according to receiving vertex. This sorting allowed the accumulation of pushed values, the communication of values, and the updating of
-Pagerank values from received values to all happen more quickly. However, this required an often very expensive sort to be performed.
+After precomputing is done, each process loops over its vertices, computes the appropriate value to push to each vertex, and uses the accumulator and
+associated indexing arrays to place the values being pushed in the correct locations. After this is done, values are communicated to the correct
+locations through an all-to-all personalized operation. Upon receving its values, each process scans the values received along with a precomputed
+indexing array to add the received values to the Pagerank of the correct local vertices.
 
-After timing the above implementations, the method without the presorting was decided to be the most consistently effective and is the implementation
-corresponding to the code turned in. The largest issue with presorting is the creation of a computation that is asymptotically large. For each
+One observation with presorting the index array in the implementation above is that it adds a computation that is asymptotically large in some cases. For each
 iteration, the serial time required to compute new Pagerank values is $O(|E|)$. This aligns with the $O(\frac{|E|}{p})$ computation time to update
-Pagerank values in the parallel algorithm. The use of presorting introduces a $O(\frac{|E|}{p} \log \frac{|E|}{p} )$ computation. When the number of
-iterations becomes large, this precompution cost can be absorbed by the increased speed of each iteration, but for small numbers of iterations, this
+Pagerank values in the parallel algorithm (assuming a uniform splitting of edges). The use of presorting introduces a $O(\frac{|E|}{p} \log \frac{|E|}{p} )$ computation. When the number of
+iterations becomes large, this precompution cost can be amortized across the iterations, but for small numbers of iterations, this
 precomputing step dominates the computation time.
 
 We will consider the communication cost associated to each iteration of the parallel Pagerank algorithm. Determining these costs is not a straight-forward task. This is because the communication
@@ -116,13 +107,6 @@ serial implementation used is the one provided by Shaden. The parallel implement
 implementation. There is a slightly longer running time, most likely due to an extra array lookup associated to indexing into the accumulator which
 is set up to avoid storing zero values.
 
-
-
-Following are the timing results of the Pagerank implementations. The serial implementation used is the one provided by Shaden. Values in columns
-labeled ``With Sorting'' correspond to precomputing steps that presorted all outgoing edges to reduce message size. Values in columns labeled
-``Without Sorting'' correspond to precomputing steps given in the first implementation above in which messages are unordered. This is the time used
-for all speedup calculations.
-
 \begin{figure}[h]
   \begin{tabular}{| r | r | r r | r |}
     \hline
@@ -131,88 +115,101 @@ for all speedup calculations.
     Dataset & Processes & {Time/Iteration (sec)} & {Speedup} & Iterations\\
     \hline
     \multirow{6}{4em}{A.graph} & Serial & 0.147 & -- & \multirow{6}{4em}{80} \\
-    & 1 & 0.180 & 0.235 & \\
-    & 2 & 0.091 & 0.468 & \\
-    & 4 & 0.050 & 0.750 & \\
-    & 8 & 0.029 & 1.50 & \\
-    & 16 & 0.020 & 1.82 & \\
-    & 32 & 0.014 & 3.51 & \\
+    & 1 & 0.180 & 0.817 & \\
+    & 2 & 0.091 & 1.62 & \\
+    & 4 & 0.050 & 2.94 & \\
+    & 8 & 0.029 & 5.07 & \\
+    & 16 & 0.020 & 7.35 & \\
+    & 32 & 0.014 & 10.50 & \\
     \hline
     \multirow{6}{4em}{B.graph} & Serial & 0.938 & -- & \multirow{6}{4em}{12}\\
-    & 1 & 0.939 & 0.576 & \\
-    & 2 & 0.489 & 1.22 & \\
-    & 4 & 0.346 & 2.22 & \\
-    & 8 & 0.250 & 3.74 & \\
-    & 16 & 0.255 & 5.00 & \\
-    & 32 & 1.462 & 0.464 & \\
+    & 1 & 0.939 & 0.999 & \\
+    & 2 & 0.489 & 1.92 & \\
+    & 4 & 0.346 & 2.71 & \\
+    & 8 & 0.250 & 3.75 & \\
+    & 16 & 0.255 & 3.68 & \\
+    & 32 & 1.462 & 0.64 & \\
     \hline
     \multirow{6}{8em}{live-journal.graph} & Serial & 0.397 & -- & \multirow{6}{4em}{100} \\
-    & 1 & 0.418 & 0.437 & \\
-    & 2 & 0.260 & 0.738 & \\
-    & 4 & 0.186 & 1.11 & \\
-    & 8 & 0.136 & 1.62 & \\
-    & 16 & 0.117 & 2.19 & \\
-    & 32 & 0.312 & 0.623 & \\
+    & 1 & 0.418 & 0.950 & \\
+    & 2 & 0.260 & 1.53 & \\
+    & 4 & 0.186 & 2.13 & \\
+    & 8 & 0.136 & 2.92 & \\
+    & 16 & 0.117 & 3.39 & \\
+    & 32 & 0.312 & 1.27 & \\
     \hline
   \end{tabular}
 \end{figure}
+
+In the A.graph dataset, edges were such that a vertex pushed its values to vertices that were close in label. This meant that most of the values
+pushed out from vertices were pushed to other vertices in the same process. This meant communication between processes was very small, allowing better
+speedup.
+
+B.graph and live-journal.graph each had a large number of edges between processes. This meant the communication costs were much higher for each
+iteration. This communication cost became very apparent when using 32 processes. At this point, not all processes could be run on a single machine, so
+the communication had to occur between different machines. This caused a significant drop in performance from that attained with 16 threads on these
+two datasets.
+
+One observation that was made during this assignment was that the precomputing often required a significant amount of time when compared to the actual
+iterative process of calculating Pagerank. This stems from the fact that each iteration cost $O(|E|)$ for updates in the serial algorithm. The
+preprocessing requires sorting the edge set, which is a $O({{|E|}\over{p}} \log {{|E|}\over{p}})$ operation. When the number of iterations for convergence
+is small, this precomputing step ends up being the dominant term in the calculation.
+
+To illustrate the above observation, timing was also done on the total runtime including precomputing. The serial implementation used is the one provided by Shaden. Values in columns
+labeled ``With Sorting'' correspond to precomputing steps that presorted all outgoing edges to reduce message size. This was compared to an
+implementation labeled ``Without Sorting'' which computed similar arrays for indexing local vertex push values into an accumulator, but the
+precomputing step did not sort the set of outgoing edges and remove repeated indices. This leads to large redundant communication and values being
+received with much less order, but the possibly expensive sorting step could be skipped. This implementation was not expected to perform exceptionally
+well, especially when large amounts of communication are required, but it was expected to perform comparably well with small communication or when the
+iteration converges quickly enough for the sort of the previous implementation to not be amortized across many iterations. The results for these
+timings are given below.
 
 \begin{figure}[h]
-  \begin{adjustwidth}{-2.8cm}{}
-  \begin{tabular}{| r | r | r r | r r | r |}
+  \begin{tabular}{| r | r | r | r | r |}
     \hline
-    \multicolumn{7}{|c|}{Pagerank Timing Results} \\
+    \multicolumn{5}{|c|}{Pagerank Total Time Results} \\
     \hline
-    & & \multicolumn{2}{|c|}{\underline{Without Sorting}} & \multicolumn{2}{|c|}{\underline{With Sorting}} & \\
-    Dataset & Processes & \multicolumn{1}{|r}{Time/Iteration (sec)} & \multicolumn{1}{r|}{Speedup} & \multicolumn{1}{|r}{Time/Iteration (sec)} &
-    \multicolumn{1}{r|}{Speedup} & Iterations\\
+    & & \multicolumn{1}{|c|}{\underline{Without Sorting}} & \multicolumn{1}{|c|}{\underline{With Sorting}} & \\
+    Dataset & Processes & \multicolumn{1}{|r|}{Total Time (sec)} & \multicolumn{1}{|r|}{Total Time (sec)}
+    & Iterations\\
     \hline
-    \multirow{6}{4em}{A.graph} & Serial & 0.144 & -- & -- & -- & \multirow{6}{4em}{80} \\
-    & 1 & 0.612 & 0.235 & 0.305 & 0.472 & \\
-    & 2 & 0.308 & 0.468 & 0.151 & 0.954 & \\
-    & 4 & 0.192 & 0.750 & 0.080 & 1.80 & \\
-    & 8 & 0.096 & 1.50 & 0.049 & 2.94 & \\
-    & 16 & 0.079 & 1.82 &0.031 & 4.65 & \\
-    & 32 & 0.041 & 3.51 & 0.018 & 8.00 & \\
+    \multirow{6}{4em}{A.graph} & Serial & 11.52 & -- & \multirow{6}{4em}{80} \\
+    & 1 & 48.96 & 24.4 & \\
+    & 2 & 24.64 & 12.08 & \\
+    & 4 & 15.36 & 6.40 & \\
+    & 8 & 7.68 & 3.92 & \\
+    & 16 & 6.32 & 2.48 & \\
+    & 32 & 3.28 & 1.44 & \\
     \hline
-    \multirow{6}{4em}{B.graph} & Serial & 0.935 & -- & -- & -- & \multirow{6}{4em}{12}\\
-    & 1 & 1.624 & 0.576 & 5.233 & 0.179 & \\
-    & 2 & 0.765 & 1.22 & 2.614 & 0.358 & \\
-    & 4 & 0.422 & 2.22 & 1.596 & 0.586 & \\
-    & 8 & 0.250 & 3.74 & 0.841 & 1.11 & \\
-    & 16 & 0.187 & 5.00 & 0.533 & 1.74 & \\
-    & 32 & 2.015 & 0.464 & 1.694 & 0.552 & \\
+    \multirow{6}{4em}{B.graph} & Serial & 11.22 & -- & \multirow{6}{4em}{12}\\
+    & 1 & 19.49 & 62.80 & \\
+    & 2 & 9.18 & 31.37 & \\
+    & 4 & 5.06 & 19.15 & \\
+    & 8 & 3.00 & 10.09 & \\
+    & 16 & 2.24 & 6.40 & \\
+    & 32 & 39.36 & 20.33 & \\
     \hline
-    \multirow{6}{8em}{live-journal.graph} & Serial & 0.399 & -- & -- & -- & \multirow{6}{4em}{100} \\
-    & 1 & 0.913 & 0.437 & 0.694 & 0.575 & \\
-    & 2 & 0.541 & 0.738 & 0.419 & 0.952 & \\
-    & 4 & 0.360 & 1.11 & 0.288 & 1.39 & \\
-    & 8 & 0.246 & 1.62 & 0.205 & 1.95 & \\
-    & 16 & 0.182 & 2.19 & 0.161 & 2.48 & \\
-    & 32 & 0.640 & 0.623 & 0.338 & 1.18 & \\
+    \multirow{6}{8em}{live-journal.graph} & Serial & 39.9 & -- & \multirow{6}{4em}{100} \\
+    & 1 & 91.3 & 69.4 & \\
+    & 2 & 54.1 & 41.9 & \\
+    & 4 & 36.0 & 28.8 & \\
+    & 8 & 24.6 & 20.5 & \\
+    & 16 & 18.2 & 16.1 & \\
+    & 32 & 64.0 & 33.8 & \\
     \hline
   \end{tabular}
-  \end{adjustwidth}
 \end{figure}
 
-As we can see, sorting was able to achieve the largest speedup seen. This was largely due to the structure of the graph in A.graph and the difficulty
-of obtaining convergence. A.graph featured many edges from nearby vertices going to the same vertex. By presorting and eliminating redundant vertices
-to send values to, the message size from each process was greatly reduced. This problem also took many iterations to converge, allowing the cost of
-the expensive sort to be spread out over more iterations. These characteristics allowed the sorting implementation perform very well for A.graph.
+As we can see, the time required for sorting in the precomputing step was amortized over enough iterations for A.graph and live-journal.graph to be
+more effective than precomputing without sorting and introducing a larger communication overhead. For B.graph, very few iterations were needed for
+convergence, and the sorting step took especially long, resulting in a much greater total runtime than if the sort had been skipped in the
+precomputing step.
 
-For B.graph, the sorting was significantly more difficult and less effective at reducing message size. Combined with the small number of iterations to
-converge, sorting was significantly outperformed by the simpler implementation without sorting. One important observation is that when scaling to 32
-processes, the calculation could no longer be contained to a single machine. The communication costs between machines is much greater than the costs
-of communication within a machine. Because of this, we see that the performance of the sorting implementation surpassed that of the non-sorting
-implementation due to the reduced message sizes.
-
-The data in live-journal.graph was not as structured as in A.graph, so the reduction in communication costs for the sorting implementation were not as
-significant. However, the fact that the iteration cap was reached allowed the two implementation to perform fairly evenly.
-
-While sorting in the precomputing stage did provide better performance in some cases, the dependence on the number of iterations required to converge
-made it less appealing than a simpler precomputing step that doesn't sort and eliminate redundant communication. It is worth noting that the sorting
-implementation did show better scaling properties when enough processes were used to spread the computation onto multiple machines due to the smaller
-size of messages being sent.
+Overall, skipping the sort during precomputing was not very effective. It could have a smaller total runtime than the implementation with sorting in
+certain circumstances, but these circumstances required the problem to be easier in the sense of convergence being attained in relatively few
+iterations. As more difficult problems are solved, the number of iterations required will increase. The major flaw with skipping the sorting can be
+seen when scaling to 32 processes in the last two datasets. When communication across a network is required, the larger message sizes causes the
+algorithm to run very slowly. This fact makes the simpler implementation not scalable when running running on any reasonable computing system.
 
 \end{document}
 
