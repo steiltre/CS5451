@@ -2,20 +2,20 @@
 
 # Script to run pagerank programs
 
-echo "" > timing_results.txt
+echo "" > $1
 
 for n in A.graph B.graph live-journal.graph
 do
-  echo $n | tee -a timing_results.txt
-  ../pagerank_serial/pagerank_serial /export/scratch/CSCI-5451/assignment-3/$n | tee -a timing_results.txt
+  echo $n | tee -a $1
+  ../pagerank_serial/pagerank_serial /export/scratch/CSCI-5451/assignment-3/$n | tee -a $1
   for processes in 1 2 4 8 16
   do
-    echo pagerank $n $processes | tee -a timing_results.txt
-    mpirun -np $processes ./pagerank /export/scratch/CSCI-5451/assignment-3/$n | tee -a timing_results.txt
-    echo "" | tee -a timing_results.txt
+    echo pagerank $n $processes | tee -a $1
+    mpirun -np $processes ./pagerank /export/scratch/CSCI-5451/assignment-3/$n | tee -a $1
+    echo "" | tee -a $1
   done
-  echo pagerank $n 32 | tee -a timing_results.txt
-  mpirun -np 32 -hostfile ./pr_hosts ./pagerank /export/scratch/CSCI-5451/assignment-3/$n | tee -a timing_results.txt
-  echo "" | tee -a timing_results.txt
+  echo pagerank $n 32 | tee -a $1
+  mpirun -np 32 -hostfile ./pr_hosts ./pagerank /export/scratch/CSCI-5451/assignment-3/$n | tee -a $1
+  echo "" | tee -a $1
 done
 
