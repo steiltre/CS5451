@@ -121,8 +121,31 @@ double * pagerank(
   pr_int * recv_inds = malloc( rdispls[npes] * sizeof( *recv_inds ) );
   double * recv_vals = malloc( rdispls[npes] * sizeof( *recv_vals ) );
 
+  //int * next_ind = malloc( npes * sizeof(*next_ind) );
+
   /* Communication pattern is static, so indices can be sent in advance */
   MPI_Alltoallv( accum->send_ind, sendcounts, sdispls, pr_mpi_int, recv_inds, recvcounts, rdispls, pr_mpi_int, MPI_COMM_WORLD );
+  int * recvnbrs = malloc( rdispls[npes] * sizeof(*recvnbrs) );
+  int * recvadj = malloc( (nvtxs+1) * sizeof(*recvadj) );
+
+  int next_ind[npes];
+  for ( int i=0; i<npes; i++ ) {
+    next_ind[i] = rdispls[i];
+  }
+
+  recvadj[0] = 0;
+
+  int count = 0;
+  for (pr_int v=0; v<nvtxs; v++) {
+    for (int j=0; j<npes; j++) {
+      if (recv_inds[ next_ind[j] ] == v + pid*ideal_vtxs && next_ind[j] < rdispls[j+1])
+      {
+        recvnbrs[ count++ ] = next_ind[j]++;
+      }
+      recvadj[v+1] = count;
+    }
+  }
+
 
   /* Initialize pageranks to be a probability distribution. */
   double * PR = malloc(nvtxs * sizeof(*PR));
@@ -157,26 +180,15 @@ double * pagerank(
     double norm_changed = 0.;
     double global_norm_changed = 0;
 
-    int * next_ind = malloc( npes * sizeof(*next_ind) );
-
-    for (int j=0; j<npes; j++) {
-      next_ind[j] = rdispls[j];
-    }
-
     for (pr_int v=0; v<nvtxs; ++v) {
       double old = PR[v];
       PR[v] = restart;
 
-      for (int j=0; j<npes; j++) {
-        if (recv_inds[ next_ind[j] ] == v + pid*ideal_vtxs && next_ind[j] < rdispls[j+1])
-        {
-          PR[v] += damping * recv_vals[ next_ind[j]++ ];
-        }
+      for (pr_int e = recvadj[v]; e < recvadj[v+1]; e++) {
+        PR[v] += damping * recv_vals[ recvnbrs[e] ];
       }
       norm_changed += (PR[v] - old) * (PR[v] - old);
     }
-
-    free(next_ind);
 
     /* Communicate global Frobenius norm */
     MPI_Allreduce( &norm_changed, &global_norm_changed, 1, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD );
@@ -216,8 +228,6 @@ void CreateCommArrays(
 
   MPI_Comm_size( MPI_COMM_WORLD, &npes);
   MPI_Comm_rank( MPI_COMM_WORLD, &pid);
-
-  //int ideal_vtxs = (int) ceil( ((double) graph->tvtxs) / npes );
 
   *sendcounts = malloc( npes * sizeof(int) );
   *sdispls = malloc( npes * sizeof(int) );
