@@ -3,7 +3,7 @@ NVCC=nvcc
 
 CFLAGS += \
 		-std=c99 \
-		 -g \
+		 -O3 \
     -funroll-loops \
 		-march=native \
     -fopenmp \
@@ -11,8 +11,9 @@ CFLAGS += \
     -Wno-unused-variable
 
 CUDA_FLAGS += \
-		 -g -G \
-    -Wno-deprecated-gpu-targets
+		 -O3 \
+    -Wno-deprecated-gpu-targets \
+	-lineinfo
 
 LD_FLAGS += -lm -lgomp
 

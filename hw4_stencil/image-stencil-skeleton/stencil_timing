@@ -1,0 +1,18 @@
+#! /bin/bash
+
+# Script to run stencil application program
+
+echo "" > $1
+
+repeats=10
+
+for image in cavy.bmp, dijkstra.bmp, panorama.bmp
+do
+  for n in 'seq 1 $repeats'
+  do
+    echo $image $n | tee -a $1
+    ./bin/stencil $/export/scratch/CSCI-5451/assignment-4/$image | tee -a $1
+    echo "" | tee -a $1
+  done
+done
+

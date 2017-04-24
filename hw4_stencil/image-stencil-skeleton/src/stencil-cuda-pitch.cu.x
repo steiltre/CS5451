@@ -4,6 +4,7 @@
 
 #include <stdio.h>
 #include <math.h>
+#include "cuda_profiler_api.h"
 
 extern "C"
 {
@@ -16,6 +17,7 @@ __device__ __constant__ float d_stencil[9];
 __global__ void cuda_apply_stencil(
         float * input,
         float * output,
+        size_t pitch,
         int width,
         int height)
 {
@@ -29,19 +31,19 @@ __global__ void cuda_apply_stencil(
 
     /* Fetch tile values from global memory and place in shared memory (need extra column and row around boundary for applying stencil) */
     if (row > 0 && col > 0 && row < height+1 && col < width+1) {
-        tile[ threadIdx.y * (blockDim.x+2) + threadIdx.x ] = input[ (row-1)*width + (col-1) ];
+        tile[ threadIdx.y * (blockDim.x+2) + threadIdx.x ] = *(float*) ( (char*)input + (row-1)*pitch + (col-1)*sizeof(float) ) ;
     }
 
     if (threadIdx.x < 2 && row > 0 && row < height+1 && col + blockDim.x < width) {
-        tile[ threadIdx.y * (blockDim.x+2) + threadIdx.x + blockDim.x ] = input[ (row-1)*width + col + blockDim.x - 1 ];
+        tile[ threadIdx.y * (blockDim.x+2) + threadIdx.x + blockDim.x ] = *(float*) ( (char*)input + (row-1)*pitch + (col+blockDim.x-1)*sizeof(float) ) ;
     }
 
     if (threadIdx.y < 2 && col > 0 && col < width+1 && row + blockDim.y < height) {
-        tile[ (threadIdx.y + blockDim.y) * (blockDim.x+2) + threadIdx.x ] = input[ (row + blockDim.y - 1)*width + (col-1) ];
+        tile[ (threadIdx.y + blockDim.y) * (blockDim.x+2) + threadIdx.x ] = *(float*) ( (char*)input + (row+blockDim.y-1)*pitch + (col-1)*sizeof(float) );
     }
 
     if (threadIdx.x < 2 && threadIdx.y < 2 && col + blockDim.x < width && row + blockDim.y < height) {
-        tile[ (threadIdx.y + blockDim.y) * (blockDim.x+2) + threadIdx.x + blockDim.x ] = input[ (row + blockDim.y - 1)*width + col + blockDim.x - 1 ];
+        tile[ (threadIdx.y + blockDim.y) * (blockDim.x+2) + threadIdx.x + blockDim.x ] = *(float*) ( (char*)input + (row+blockDim.y-1)*pitch + (col+blockDim.x-1)*sizeof(float) );
     }
 
     __syncthreads();
@@ -49,7 +51,7 @@ __global__ void cuda_apply_stencil(
     if (row >= 0 && col >= 0 && row < height && col < width) {
         if (row == 0 || col == 0 || row == height-1 || col == width-1) {
             //temp = tile[ (threadIdx.y+1) * (blockDim.x+2) + threadIdx.x+1 ];
-            temp = input[ row * width + col ];
+            temp = *(float*) ( (char*)input + row*pitch + col*sizeof(float) );
         }
         else {
             for (int i=0; i<3; i++) {
@@ -59,7 +61,7 @@ __global__ void cuda_apply_stencil(
             }
         }
 
-        output[ row*width + col ] = temp;
+        *(float*) ( (char*)output + row*pitch + col*sizeof(float) ) = temp;
     }
 
 }
@@ -71,9 +73,13 @@ image_t * stencil_cuda(
 {
   image_t * output = image_alloc(input->width, input->height);
 
-  int arr_size = input->width*input->height * sizeof(float);
+  cudaProfilerStart();
+
+  //int arr_size = input->width*input->height * sizeof(float);
 
   float *d_redout, *d_greenout, *d_blueout, *d_redin, *d_greenin, *d_bluein;
+
+  size_t pitch;  /* Pitch used for padding rows of array for coalescing memory accesses */
 
   /*
   int width = 35;
@@ -93,18 +99,32 @@ image_t * stencil_cuda(
   cudaMemcpy(d_test, test, height*width*sizeof(float), cudaMemcpyHostToDevice);
   */
 
-  cudaMalloc( (void**) &d_redout, arr_size );
-  cudaMalloc( (void**) &d_greenout, arr_size );
-  cudaMalloc( (void**) &d_blueout, arr_size );
-  cudaMalloc( (void**) &d_redin, arr_size );
-  cudaMalloc( (void**) &d_greenin, arr_size );
-  cudaMalloc( (void**) &d_bluein, arr_size );
+  cudaMallocPitch( (void**) &d_redout, &pitch, input->width*sizeof(float), input->height );
+  cudaMallocPitch( (void**) &d_greenout, &pitch, input->width*sizeof(float), input->height );
+  cudaMallocPitch( (void**) &d_blueout, &pitch, input->width*sizeof(float), input->height );
+  cudaMallocPitch( (void**) &d_redin, &pitch, input->width*sizeof(float), input->height );
+  cudaMallocPitch( (void**) &d_greenin, &pitch, input->width*sizeof(float), input->height );
+  cudaMallocPitch( (void**) &d_bluein, &pitch, input->width*sizeof(float), input->height );
+
+  /*
+  cudaMallocPitch( (void**) &d_greenout, arr_size );
+  cudaMallocPitch( (void**) &d_blueout, arr_size );
+  cudaMallocPitch( (void**) &d_redin, arr_size );
+  cudaMallocPitch( (void**) &d_greenin, arr_size );
+  cudaMallocPitch( (void**) &d_bluein, arr_size );
+  */
 
   cudaMemcpyToSymbol(d_stencil, stencil, 9*sizeof(float));
 
+  cudaMemcpy2D( d_redin, pitch, input->red, input->width*sizeof(float), input->width*sizeof(float), input->height, cudaMemcpyHostToDevice);
+  cudaMemcpy2D( d_greenin, pitch, input->green, input->width*sizeof(float), input->width*sizeof(float), input->height, cudaMemcpyHostToDevice);
+  cudaMemcpy2D( d_bluein, pitch, input->blue, input->width*sizeof(float), input->width*sizeof(float), input->height, cudaMemcpyHostToDevice);
+
+  /*
   cudaMemcpy(d_redin, input->red, arr_size, cudaMemcpyHostToDevice);
   cudaMemcpy(d_greenin, input->green, arr_size, cudaMemcpyHostToDevice);
   cudaMemcpy(d_bluein, input->blue, arr_size, cudaMemcpyHostToDevice);
+  */
 
   /* Determine dimensions of blocks and grid */
   /* Want blocks that are roughly square but also have length that is a multiple of WARPLENGTH for coalescing */
@@ -129,14 +149,23 @@ image_t * stencil_cuda(
 
   for (int i=0; i < num_times; ++i) {
       /* Apply stencil to each channel separately. */
-      cuda_apply_stencil<<<grid, block, (block.x+2)*(block.y+2)*sizeof(float)>>>(d_redin, d_redout, input->width, input->height);
-      cuda_apply_stencil<<<grid, block, (block.x+2)*(block.y+2)*sizeof(float)>>>(d_greenin, d_greenout, input->width, input->height);
-      cuda_apply_stencil<<<grid, block, (block.x+2)*(block.y+2)*sizeof(float)>>>(d_bluein, d_blueout, input->width, input->height);
+      cuda_apply_stencil<<<grid, block, (block.x+2)*(block.y+2)*sizeof(float)>>>(d_redin, d_redout, pitch, input->width, input->height);
+      cuda_apply_stencil<<<grid, block, (block.x+2)*(block.y+2)*sizeof(float)>>>(d_greenin, d_greenout, pitch, input->width, input->height);
+      cuda_apply_stencil<<<grid, block, (block.x+2)*(block.y+2)*sizeof(float)>>>(d_bluein, d_blueout, pitch, input->width, input->height);
   }
 
+  cudaMemcpy2D( output->red, output->width*sizeof(float), d_redout, pitch, output->width*sizeof(float), output->height, cudaMemcpyDeviceToHost);
+  cudaMemcpy2D( output->green, output->width*sizeof(float), d_greenout, pitch, output->width*sizeof(float), output->height, cudaMemcpyDeviceToHost);
+  cudaMemcpy2D( output->blue, output->width*sizeof(float), d_blueout, pitch, output->width*sizeof(float), output->height, cudaMemcpyDeviceToHost);
+
+  /*
   cudaMemcpy(output->red, d_redout, arr_size, cudaMemcpyDeviceToHost);
   cudaMemcpy(output->green, d_greenout, arr_size, cudaMemcpyDeviceToHost);
   cudaMemcpy(output->blue, d_blueout, arr_size, cudaMemcpyDeviceToHost);
+  */
+
+  cudaDeviceSynchronize();
+  cudaProfilerStop();
 
   return output;
 }
