@@ -18,6 +18,12 @@
 # ignore text files
 *.txt
 
+# ignore images
+*.bmp
+
+# ignore object files
+*.o
+
 #ignore specific binary files
 */km_pthreads
 */km_openmp
@@ -26,6 +32,7 @@
 */rs_serial
 */pagerank
 */pagerank_serial
+*/stencil
 
 #ignore .tar.gz
 *.tar.gz
