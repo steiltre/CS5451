@@ -1,5 +1,5 @@
 
-#define THREADSPERBLOCK 1024
+#define THREADSPERBLOCK 512
 #define WARPLENGTH 32
 
 #include <stdio.h>
@@ -48,8 +48,8 @@ __global__ void cuda_apply_stencil(
 
     if (row >= 0 && col >= 0 && row < height && col < width) {
         if (row == 0 || col == 0 || row == height-1 || col == width-1) {
-            //temp = tile[ (threadIdx.y+1) * (blockDim.x+2) + threadIdx.x+1 ];
-            temp = input[ row * width + col ];
+            temp = tile[ (threadIdx.y+1) * (blockDim.x+2) + threadIdx.x+1 ];
+            //temp = input[ row * width + col ];
         }
         else {
             for (int i=0; i<3; i++) {
