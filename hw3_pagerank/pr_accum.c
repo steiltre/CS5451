@@ -4,6 +4,13 @@
 
 #include "pr_accum.h"
 #include "pr_utils.h"
+<<<<<<< HEAD
+=======
+#include "pr_radix_sort.h"
+
+#define SORT
+//#define PRECOMP_SEND_PROC
+>>>>>>> origin/master
 
 void pr_accum_add_vtx(
     pr_accum * accum,
@@ -120,6 +127,26 @@ void pr_accum_local_nbrs(
       accum->local_nbrs[e] = ind;
     }
   }
+<<<<<<< HEAD
+=======
+
+/*
+  int count = 0;
+  for (pr_int v=0; v<graph->nvtxs; ++v) {
+    for (pr_int e=graph->xadj[v]; e < graph->xadj[v+1]; ++e) {
+      pr_int ind = binary_search(accum->send_ind, accum->nvals, graph->nbrs[e]);
+
+      if (ind == -1) {
+        fprintf(stderr, "ERROR: could not locate '%lu' in send_ind array.\n", graph->nbrs[e]);
+      }
+      else {
+        accum->local_nbrs[count] = ind;
+      }
+      count++;
+    }
+  }
+  */
+>>>>>>> origin/master
 }
 
 void pr_accum_free(

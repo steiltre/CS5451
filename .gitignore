@@ -43,6 +43,10 @@
 #graph and pagerank files from CSCI 5451 homework 3
 *.graph
 *.pr.txt
+<<<<<<< HEAD
 
 # include timing resutls
 !*timing_results.txt
+=======
+pr_hosts
+>>>>>>> origin/master
