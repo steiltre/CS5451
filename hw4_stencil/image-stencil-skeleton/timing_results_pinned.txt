@@ -1,0 +1,151 @@
+
+cavy.bmp 1
+#REPEATS=1
+CPU time: 0.028s  GFLOPS: 0.71
+GPU time: 0.006s  GFLOPS: 3.29
+
+cavy.bmp 2
+#REPEATS=2
+CPU time: 0.031s  GFLOPS: 1.28
+GPU time: 0.006s  GFLOPS: 6.29
+
+cavy.bmp 3
+#REPEATS=3
+CPU time: 0.016s  GFLOPS: 3.66
+GPU time: 0.006s  GFLOPS: 9.17
+
+cavy.bmp 4
+#REPEATS=4
+CPU time: 0.013s  GFLOPS: 6.26
+GPU time: 0.007s  GFLOPS: 11.71
+
+cavy.bmp 5
+#REPEATS=5
+CPU time: 0.059s  GFLOPS: 1.68
+GPU time: 0.007s  GFLOPS: 14.21
+
+cavy.bmp 6
+#REPEATS=6
+CPU time: 0.081s  GFLOPS: 1.46
+GPU time: 0.007s  GFLOPS: 16.97
+
+cavy.bmp 7
+#REPEATS=7
+CPU time: 0.090s  GFLOPS: 1.55
+GPU time: 0.007s  GFLOPS: 18.73
+
+cavy.bmp 8
+#REPEATS=8
+CPU time: 0.059s  GFLOPS: 2.67
+GPU time: 0.008s  GFLOPS: 20.68
+
+cavy.bmp 9
+#REPEATS=9
+CPU time: 0.049s  GFLOPS: 3.67
+GPU time: 0.008s  GFLOPS: 22.86
+
+cavy.bmp 10
+#REPEATS=10
+CPU time: 0.100s  GFLOPS: 1.98
+GPU time: 0.008s  GFLOPS: 24.12
+
+dijkstra.bmp 1
+#REPEATS=1
+CPU time: 0.144s  GFLOPS: 3.28
+GPU time: 0.116s  GFLOPS: 4.07
+
+dijkstra.bmp 2
+#REPEATS=2
+CPU time: 0.174s  GFLOPS: 5.41
+GPU time: 0.122s  GFLOPS: 7.72
+
+dijkstra.bmp 3
+#REPEATS=3
+CPU time: 0.254s  GFLOPS: 5.57
+GPU time: 0.129s  GFLOPS: 11.01
+
+dijkstra.bmp 4
+#REPEATS=4
+CPU time: 0.293s  GFLOPS: 6.45
+GPU time: 0.134s  GFLOPS: 14.11
+
+dijkstra.bmp 5
+#REPEATS=5
+CPU time: 0.313s  GFLOPS: 7.54
+GPU time: 0.140s  GFLOPS: 16.90
+
+dijkstra.bmp 6
+#REPEATS=6
+CPU time: 0.342s  GFLOPS: 8.29
+GPU time: 0.146s  GFLOPS: 19.46
+
+dijkstra.bmp 7
+#REPEATS=7
+CPU time: 0.388s  GFLOPS: 8.52
+GPU time: 0.151s  GFLOPS: 21.83
+
+dijkstra.bmp 8
+#REPEATS=8
+CPU time: 0.407s  GFLOPS: 9.28
+GPU time: 0.157s  GFLOPS: 24.01
+
+dijkstra.bmp 9
+#REPEATS=9
+CPU time: 0.480s  GFLOPS: 8.85
+GPU time: 0.163s  GFLOPS: 26.01
+
+dijkstra.bmp 10
+#REPEATS=10
+CPU time: 0.506s  GFLOPS: 9.32
+GPU time: 0.169s  GFLOPS: 27.85
+
+panorama.bmp 1
+#REPEATS=1
+CPU time: 0.534s  GFLOPS: 3.85
+GPU time: 0.498s  GFLOPS: 4.14
+
+panorama.bmp 2
+#REPEATS=2
+CPU time: 0.666s  GFLOPS: 6.18
+GPU time: 0.527s  GFLOPS: 7.82
+
+panorama.bmp 3
+#REPEATS=3
+CPU time: 0.862s  GFLOPS: 7.16
+GPU time: 0.550s  GFLOPS: 11.23
+
+panorama.bmp 4
+#REPEATS=4
+CPU time: 1.005s  GFLOPS: 8.19
+GPU time: 0.575s  GFLOPS: 14.32
+
+panorama.bmp 5
+#REPEATS=5
+CPU time: 1.189s  GFLOPS: 8.66
+GPU time: 0.601s  GFLOPS: 17.13
+
+panorama.bmp 6
+#REPEATS=6
+CPU time: 1.370s  GFLOPS: 9.01
+GPU time: 0.627s  GFLOPS: 19.69
+
+panorama.bmp 7
+#REPEATS=7
+CPU time: 1.500s  GFLOPS: 9.61
+GPU time: 0.653s  GFLOPS: 22.08
+
+panorama.bmp 8
+#REPEATS=8
+CPU time: 1.660s  GFLOPS: 9.92
+GPU time: 0.678s  GFLOPS: 24.30
+
+panorama.bmp 9
+#REPEATS=9
+CPU time: 1.862s  GFLOPS: 9.95
+GPU time: 0.705s  GFLOPS: 26.28
+
+panorama.bmp 10
+#REPEATS=10
+CPU time: 1.996s  GFLOPS: 10.31
+GPU time: 0.731s  GFLOPS: 28.15
+
