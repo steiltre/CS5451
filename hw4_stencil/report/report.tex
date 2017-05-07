@@ -1,0 +1,122 @@
+%        File: report.tex
+%     Created: Tue Feb 07 05:00 PM 2017 C
+% Last Change: Tue Feb 07 05:00 PM 2017 C
+%
+
+\documentclass[a4paper]{article}
+
+\title{Computer Science 5451 Stencil Report }
+\date{}
+\author{Trevor Steil}
+
+\usepackage{amsmath}
+\usepackage{amsthm}
+\usepackage{amssymb}
+\usepackage{esint}
+\usepackage{enumitem}
+\usepackage{algorithm}
+\usepackage{algorithmicx}
+\usepackage{algpseudocode}
+\usepackage{bbm}
+\usepackage{xcolor}
+\usepackage{multirow}
+\usepackage{changepage}
+
+\newtheorem{theorem}{Theorem}[section]
+\newtheorem{corollary}{Corollary}[section]
+\newtheorem{proposition}{Proposition}[section]
+\newtheorem{lemma}{Lemma}[section]
+\newtheorem*{claim}{Claim}
+\newtheorem*{problem}{Problem}
+%\newtheorem*{lemma}{Lemma}
+\newtheorem{definition}{Definition}[section]
+
+\newcommand{\R}{\mathbb{R}}
+\newcommand{\N}{\mathbb{N}}
+\newcommand{\C}{\mathbb{C}}
+\newcommand{\Z}{\mathbb{Z}}
+\newcommand{\Q}{\mathbb{Q}}
+\newcommand{\E}{\mathbb{E}}
+\newcommand{\supp}[1]{\mathop{\mathrm{supp}}\left(#1\right)}
+\newcommand{\lip}[1]{\mathop{\mathrm{Lip}}\left(#1\right)}
+\newcommand{\curl}{\mathrm{curl}}
+\newcommand{\la}{\left \langle}
+\newcommand{\ra}{\right \rangle}
+\renewcommand{\vec}[1]{\mathbf{#1}}
+\renewcommand{\div}{\mathrm{div}}
+
+\newenvironment{solution}[1][]{\emph{Solution #1}}
+
+\algnewcommand{\Or}{\textbf{ or }}
+\algnewcommand{\And}{\textbf{ or }}
+
+\begin{document}
+\maketitle
+
+\section{Parallelization}
+
+The basic idea for implementing the stencil application to run on a GPU was to allow each thread of the GPU to compute the new RGB values for a single
+pixel. In this way, each thread could be performing the exact same work completely independently of all other threads. Because each pixel has the same
+static stencil applied to it, the stencil matrix was stored in the constant memory to allow all threads to have easy access. The main difficulties of this
+method are to effectively use the shared memory.
+
+Because the stencil uses neighboring values to compute at a given pixel, there is a lot of overlap of data usage. For this reason, blocks of threads
+would first take the input values corresponding to its pixels from global memory and store them in shared memory. In order to compute the values at
+the boundary of a block's group of pixels, an extra row and column had to be appended to the block's tile of pixels in shared memory. After moving values to shared
+memory, each thread could independently apply the stencil to its pixel.
+
+The shape of a block's tile of pixels was determined by the extra pixels needed to calculate boundaries and the architecture of the GPU. If each block
+computed a 1D segment of $n$ pixels, the extra row above and below the block's tile would contribute $O(n)$ extra values to be fetched from global
+memory. If instead a block had a tile of $\sqrt{n} \times \sqrt{n}$ elements, the extra rows and columns would contribute only $O(\sqrt{n})$ extra
+elements to fetch from global memory. For this reason, blocks were chosen to be 2-dimensional.
+
+From above, blocks needed to be 2-dimensional to prevent extra global memory accesses, but just minimizing the number of global memory accesses by
+choosing perfectly square blocks would also lead to poor performance. Threads within a block are split into 1-dimensional warps of 32 threads that perform
+computations simultaneously. When a warp accesses global memory, it can coalesce these distinct memory accesses into a single operation if all threads
+are accessing neighboring elements. For this reason, blocks should have a width that is a multiple of 32 in order to prevent a warp from being split
+across rows of the block's tile. For this reason, blocks with $n$ threads were chosen to be rectangular with widths that were the largest multiple of 32 less than or
+equal to $\sqrt{n}$.
+
+Each block could have at most 1024
+threads. Each thread would store approximately one floating point value, giving a maximum shared memory usage of roughly 4 kB per block
+
+\section{Results}
+
+\begin{figure}[h]
+  \begin{tabular}{| r | r | r r | r |}
+    \hline
+    \multicolumn{5}{|c|}{Pagerank per Iteration Timing Results} \\
+    \hline
+    Dataset & Processes & {Time/Iteration (sec)} & {Speedup} & Iterations\\
+    \hline
+    \multirow{6}{4em}{A.graph} & Serial & 0.144 & -- & \multirow{7}{4em}{80} \\
+    & 1 & 0.177 & 0.814 & \\
+    & 2 & 0.096 & 1.50 & \\
+    & 4 & 0.046 & 3.13 & \\
+    & 8 & 0.028 & 5.14 & \\
+    & 16 & 0.016 & 9.00 & \\
+    & 32 & 0.015 & 9.60 & \\
+    \hline
+    \multirow{6}{4em}{B.graph} & Serial & 0.931 & -- & \multirow{7}{4em}{12}\\
+    & 1 & 0.950 & 0.980 & \\
+    & 2 & 0.487 & 1.91 & \\
+    & 4 & 0.330 & 2.82 & \\
+    & 8 & 0.244 & 3.82 & \\
+    & 16 & 0.235 & 3.96 & \\
+    & 32 & 1.475 & 0.63 & \\
+    \hline
+    \multirow{6}{8em}{live-journal.graph} & Serial & 0.399 & -- & \multirow{7}{4em}{100} \\
+    & 1 & 0.415 & 0.961 & \\
+    & 2 & 0.253 & 1.57 & \\
+    & 4 & 0.177 & 2.25 & \\
+    & 8 & 0.122 & 2.92 & \\
+    & 16 & 0.096 & 4.16 & \\
+    & 32 & 0.303 & 1.32 & \\
+    \hline
+  \end{tabular}
+\end{figure}
+
+\end{document}
+
+
+\end{document}
