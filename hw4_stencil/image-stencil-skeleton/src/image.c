@@ -1,5 +1,6 @@
 
 
+#include "/usr/local/cuda/include/cuda_runtime_api.h"
 #include "image.h"
 
 
@@ -167,9 +168,18 @@ image_t * image_alloc(
   im->width  = width;
   im->height = height;
 
+  /*
   im->red   = malloc(width * height * sizeof(*im->red));
   im->green = malloc(width * height * sizeof(*im->green));
   im->blue  = malloc(width * height * sizeof(*im->blue));
+  */
+  //cudaMallocHost( (void**)&im->red, width * height * sizeof(*im->red) );
+  //cudaMallocHost( (void**)&im->green, width * height * sizeof(*im->green) );
+  //cudaMallocHost( (void**)&im->blue, width * height * sizeof(*im->blue) );
+
+  cudaMallocHost( (void**)&im->red, 3 * width * height * sizeof(*im->red) );
+  im->green = im->red + width * height;
+  im->blue = im->red + 2 * width * height;
 
   return im;
 }
@@ -181,9 +191,9 @@ void image_free(
   if(im == NULL) {
     return;
   }
-  free(im->red);
-  free(im->green);
-  free(im->blue);
+  cudaFreeHost(im->red);
+  //cudaFreeHost(im->green);
+  //cudaFreeHost(im->blue);
   free(im);
 }
 

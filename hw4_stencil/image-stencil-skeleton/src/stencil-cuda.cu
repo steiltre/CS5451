@@ -71,61 +71,33 @@ image_t * stencil_cuda(
 {
   image_t * output = image_alloc(input->width, input->height);
 
-  int arr_size = input->width*input->height * sizeof(float);
+  int arr_size = input->width*input->height;
 
   float *d_redout, *d_greenout, *d_blueout, *d_redin, *d_greenin, *d_bluein;
 
-  /*
-  int width = 35;
-  int height = 38;
-  float *test = (float*) malloc( width*height*sizeof(float) );
-  float *testout = (float*) malloc( width*height*sizeof(float) );
-  for (int i=0; i<height; i++) {
-      for (int j=0; j<width; j++) {
-          test[ i * width + j ] = (float) i*width+j;
-      }
-  }
+  cudaMalloc( (void**) &d_redout, 3*arr_size * sizeof(*d_redout) );
+  //cudaMalloc( (void**) &d_greenout, arr_size );
+  //cudaMalloc( (void**) &d_blueout, arr_size );
+  cudaMalloc( (void**) &d_redin, 3*arr_size  * sizeof(*d_redin) );
+  //cudaMalloc( (void**) &d_greenin, arr_size );
+  //cudaMalloc( (void**) &d_bluein, arr_size );
 
-  float *d_test;
-  float *d_testout;
-  cudaMalloc( (void**) &d_test, width*height*sizeof(float) );
-  cudaMalloc( (void**) &d_testout, width*height*sizeof(float) );
-  cudaMemcpy(d_test, test, height*width*sizeof(float), cudaMemcpyHostToDevice);
-  */
-
-  cudaMalloc( (void**) &d_redout, arr_size );
-  cudaMalloc( (void**) &d_greenout, arr_size );
-  cudaMalloc( (void**) &d_blueout, arr_size );
-  cudaMalloc( (void**) &d_redin, arr_size );
-  cudaMalloc( (void**) &d_greenin, arr_size );
-  cudaMalloc( (void**) &d_bluein, arr_size );
+  d_greenout = d_redout + arr_size;
+  d_blueout = d_redout + 2*arr_size;
+  d_greenin = d_redin + arr_size;
+  d_bluein = d_redin + 2*arr_size;
 
   cudaMemcpyToSymbol(d_stencil, stencil, 9*sizeof(float));
 
-  cudaMemcpy(d_redin, input->red, arr_size, cudaMemcpyHostToDevice);
-  cudaMemcpy(d_greenin, input->green, arr_size, cudaMemcpyHostToDevice);
-  cudaMemcpy(d_bluein, input->blue, arr_size, cudaMemcpyHostToDevice);
+  cudaMemcpy(d_redin, input->red, 3*arr_size * sizeof(*d_redin) , cudaMemcpyHostToDevice);
+  //cudaMemcpy(d_greenin, input->green, arr_size, cudaMemcpyHostToDevice);
+  //cudaMemcpy(d_bluein, input->blue, arr_size, cudaMemcpyHostToDevice);
 
   /* Determine dimensions of blocks and grid */
   /* Want blocks that are roughly square but also have length that is a multiple of WARPLENGTH for coalescing */
   int block_len =  ( (int) ceil( sqrt( float(THREADSPERBLOCK) ) / WARPLENGTH ) ) * WARPLENGTH;
   dim3 block( block_len, THREADSPERBLOCK / block_len );
   dim3 grid( ceil( input->width/float(block.x) ), ceil( input->height/float(block.y) ) );
-
-  /*
-  dim3 grid2( ceil( width/float(block.x) ), ceil( height/float(block.y) ) );
-
-  cuda_apply_stencil<<<grid2, block, (block.x+2) * (block.y+2)*sizeof(float)>>>(d_test, d_testout, width, height);
-  cudaMemcpy(testout, d_testout, height*width*sizeof(float), cudaMemcpyDeviceToHost);
-
-  for (int i=0; i<height; i++) {
-      for (int j=0; j<width; j++) {
-            if ( test[i*width+j] != testout[i*width+j] )
-                printf("Mismatch at: (%i %i) original: %0.03f output: %0.03f\n", i, j, test[i*width+j], testout[i*width+j] );
-      }
-  }
-  */
-
 
   for (int i=0; i < num_times; ++i) {
       /* Apply stencil to each channel separately. */
@@ -134,9 +106,16 @@ image_t * stencil_cuda(
       cuda_apply_stencil<<<grid, block, (block.x+2)*(block.y+2)*sizeof(float)>>>(d_bluein, d_blueout, input->width, input->height);
   }
 
-  cudaMemcpy(output->red, d_redout, arr_size, cudaMemcpyDeviceToHost);
-  cudaMemcpy(output->green, d_greenout, arr_size, cudaMemcpyDeviceToHost);
-  cudaMemcpy(output->blue, d_blueout, arr_size, cudaMemcpyDeviceToHost);
+  cudaMemcpy(output->red, d_redout, arr_size * sizeof(*d_redout), cudaMemcpyDeviceToHost);
+  //cudaMemcpy(output->green, d_greenout, arr_size, cudaMemcpyDeviceToHost);
+  //cudaMemcpy(output->blue, d_blueout, arr_size, cudaMemcpyDeviceToHost);
+
+  cudaFree(d_redout);
+  //cudaFree(d_greenout);
+  //cudaFree(d_blueout);
+  cudaFree(d_redin);
+  //cudaFree(d_greenin);
+  //cudaFree(d_bluein);
 
   return output;
 }

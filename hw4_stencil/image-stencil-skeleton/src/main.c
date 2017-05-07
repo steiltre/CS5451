@@ -79,31 +79,33 @@ int main(
 
   /* Apply the stencil. */
   double start_time = monotonic_seconds();
-  image_t * output_omp = stencil_omp(im, emboss, num_times);
+  image_t * output_omp = stencil_omp(im, blur, num_times);
   double elapsed_time = monotonic_seconds() - start_time;
   double gflops = 1e-9 * (double) flops / elapsed_time;
   printf("CPU time: %0.3fs  GFLOPS: %0.2f\n", elapsed_time, gflops);
 
 
   start_time = monotonic_seconds();
-  image_t * output_cuda = stencil_cuda(im, emboss, num_times);
+  image_t * output_cuda = stencil_cuda(im, blur, num_times);
   elapsed_time = monotonic_seconds() - start_time;
   gflops = 1e-9 * (double) flops / elapsed_time;
   printf("GPU time: %0.3fs  GFLOPS: %0.2f\n", elapsed_time, gflops);
 
+  /*
   for (int i=0; i<im->height; i++) {
     for (int j=0; j<im->width; j++) {
       if ( output_omp->red[i*im->width+j] != output_cuda->red[i*im->width+j] )
         printf("Mismatch at: (%i %i) omp: %0.03f cuda: %0.03f\n", i, j, output_omp->red[i*im->width+j], output_cuda->red[i*im->width+j] );
     }
   }
+  */
 
   /* Write the output if requested. */
   if(argc == 4) {
     image_write_bmp(argv[3], output_cuda);
   }
 
-  image_write_bmp("truth.bmp", output_omp);
+  //image_write_bmp("truth.bmp", output_omp);
 
   image_free(im);
   image_free(output_omp);
