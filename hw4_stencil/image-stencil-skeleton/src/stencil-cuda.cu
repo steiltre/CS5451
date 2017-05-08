@@ -106,7 +106,7 @@ image_t * stencil_cuda(
       cuda_apply_stencil<<<grid, block, (block.x+2)*(block.y+2)*sizeof(float)>>>(d_bluein, d_blueout, input->width, input->height);
   }
 
-  cudaMemcpy(output->red, d_redout, 3 * arr_size * sizeof(*d_redout), cudaMemcpyDeviceToHost);
+  cudaMemcpy(output->red, d_redout, 3*arr_size * sizeof(*d_redout), cudaMemcpyDeviceToHost);
   //cudaMemcpy(output->green, d_greenout, arr_size, cudaMemcpyDeviceToHost);
   //cudaMemcpy(output->blue, d_blueout, arr_size, cudaMemcpyDeviceToHost);
 

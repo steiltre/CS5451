@@ -4,11 +4,11 @@
 
 echo "" > $1
 
-repeats=10
+repeats="1 2 4 8 16 32"
 
 for image in cavy.bmp dijkstra.bmp panorama.bmp
 do
-  for n in `seq 1 $repeats`
+  for n in $repeats
   do
     echo $image $n | tee -a $1
     ./bin/stencil /export/scratch/CSCI-5451/assignment-4/$image $n | tee -a $1

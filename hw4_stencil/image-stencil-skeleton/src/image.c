@@ -173,6 +173,7 @@ image_t * image_alloc(
   im->green = malloc(width * height * sizeof(*im->green));
   im->blue  = malloc(width * height * sizeof(*im->blue));
   */
+
   //cudaMallocHost( (void**)&im->red, width * height * sizeof(*im->red) );
   //cudaMallocHost( (void**)&im->green, width * height * sizeof(*im->green) );
   //cudaMallocHost( (void**)&im->blue, width * height * sizeof(*im->blue) );
@@ -194,6 +195,9 @@ void image_free(
   cudaFreeHost(im->red);
   //cudaFreeHost(im->green);
   //cudaFreeHost(im->blue);
+  //free(im->red);
+  //free(im->green);
+  //free(im->blue);
   free(im);
 }
 
