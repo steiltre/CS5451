@@ -64,40 +64,11 @@ __global__ void cuda_apply_stencil(
 
 }
 
-__global__ void cuda_apply_stencil_no_shared(
-        float * input,
-        float * output,
-        int width,
-        int height)
-{
-    int row = blockIdx.y * blockDim.y + threadIdx.y;
-    int col = blockIdx.x * blockDim.x + threadIdx.x;
-
-    output[ row*width + col ] = 0;
-
-    if (row >= 0 && col >= 0 && row < height && col < width) {
-        if (row == 0 || col == 0 || row == height-1 || col == width-1) {
-            output[ row*width + col ] = input[ row*width + col ];
-        }
-        else {
-            for (int i=0; i<3; i++) {
-                for (int j=0; j<3; j++) {
-                    output[ row*width + col ] += d_stencil[i*3 + j] * input[ (row+i)*width + col+j ];
-                }
-            }
-        }
-    }
-
-}
-
 image_t * stencil_cuda(
     image_t const * const input,
     float stencil[3][3],
     int const num_times)
 {
-
-  cudaDeviceSetCacheConfig(cudaFuncCachePreferL1);
-
   image_t * output = image_alloc(input->width, input->height);
 
   int arr_size = input->width*input->height;
@@ -124,9 +95,9 @@ image_t * stencil_cuda(
 
   for (int i=0; i < num_times; ++i) {
       /* Apply stencil to each channel separately. */
-      cuda_apply_stencil_no_shared<<<grid, block, (block.x+2)*(block.y+2)*sizeof(float)>>>(d_redin, d_redout, input->width, input->height);
-      cuda_apply_stencil_no_shared<<<grid, block, (block.x+2)*(block.y+2)*sizeof(float)>>>(d_greenin, d_greenout, input->width, input->height);
-      cuda_apply_stencil_no_shared<<<grid, block, (block.x+2)*(block.y+2)*sizeof(float)>>>(d_bluein, d_blueout, input->width, input->height);
+      cuda_apply_stencil<<<grid, block, (block.x+2)*(block.y+2)*sizeof(float)>>>(d_redin, d_redout, input->width, input->height);
+      cuda_apply_stencil<<<grid, block, (block.x+2)*(block.y+2)*sizeof(float)>>>(d_greenin, d_greenout, input->width, input->height);
+      cuda_apply_stencil<<<grid, block, (block.x+2)*(block.y+2)*sizeof(float)>>>(d_bluein, d_blueout, input->width, input->height);
   }
 
   cudaMemcpy(output->red, d_redout, 3*arr_size * sizeof(*d_redout), cudaMemcpyDeviceToHost);
